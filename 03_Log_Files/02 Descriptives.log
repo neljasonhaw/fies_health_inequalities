@@ -1,0 +1,918 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  Log02_Descriptives
+       log:  C:\Users\neljasonhaw\OneDrive\Documents\Teaching\Research\FIES 2012 to 2018\Code\03_Log_Files\02 Descriptives.log
+  log type:  text
+ opened on:   3 Aug 2021, 16:11:34
+
+. set more off
+
+. version 17
+
+. 
+. 
+. ******** Load data set, survey set declarations
+. use "01_Intermediate_Extracts\tob_alc_health_final.dta"
+
+. svyset psu [pweight = weight], strata(stratum) singleunit(centered)
+
+Sampling weights: weight
+             VCE: linearized
+     Single unit: centered
+        Strata 1: stratum
+ Sampling unit 1: psu
+           FPC 1: <zero>
+
+. 
+. 
+. *************************************************************************************
+. ******** Descriptives table - sociodemographic characteristics by survey year
+. // Generate a new variable that combines poverty and survey round
+. gen survey_poornew = .
+(229,432 missing values generated)
+
+. label variable survey_poornew "Survey & Poverty Status (new 2015 threshold)"
+
+. replace survey_poornew = 1 if survey == 1 & poor_new2015 == 1
+(8,998 real changes made)
+
+. replace survey_poornew = 2 if survey == 1 & poor_new2015 == 0
+(31,173 real changes made)
+
+. replace survey_poornew = 3 if survey == 2 & poor_new2015 == 1
+(8,832 real changes made)
+
+. replace survey_poornew = 4 if survey == 2 & poor_new2015 == 0
+(32,712 real changes made)
+
+. replace survey_poornew = 5 if survey == 3 & poor_new2015 == 1
+(21,643 real changes made)
+
+. replace survey_poornew = 6 if survey == 3 & poor_new2015 == 0
+(126,074 real changes made)
+
+. label define survey_poor 1 "2012 Poor" 2 "2012 Non-Poor" 3 "2015 Poor" ///
+>          4 "2015 Non-Poor" 5 "2018 Poor" 6 "2018 Non-Poor"
+
+. label values survey_poornew survey_poor
+
+. 
+. gen survey_poorold = .
+(229,432 missing values generated)
+
+. label variable survey_poorold "Survey & Poverty Status (old 2015 threshold)"
+
+. replace survey_poorold = 1 if survey == 1 & poor_old2015 == 1
+(8,998 real changes made)
+
+. replace survey_poorold = 2 if survey == 1 & poor_old2015 == 0
+(31,173 real changes made)
+
+. replace survey_poorold = 3 if survey == 2 & poor_old2015 == 1
+(8,081 real changes made)
+
+. replace survey_poorold = 4 if survey == 2 & poor_old2015 == 0
+(33,463 real changes made)
+
+. replace survey_poorold = 5 if survey == 3 & poor_old2015 == 1
+(21,643 real changes made)
+
+. replace survey_poorold = 6 if survey == 3 & poor_old2015 == 0
+(126,074 real changes made)
+
+. label values survey_poorold survey_poor
+
+. 
+. // Temporarily recode variables with zero category values - this will aid in generating the descriptive table neatly
+. recode urb (0 = 1 "urban") (1 = 2 "rural"), gen(urb2)
+(229432 differences between urb and urb2)
+
+. recode educ (0 = 1 "No educ/some elem") (1 = 2 "Elem grad/some HS") (2 = 3 "HS grad or higher"), gen(educ2)
+(229432 differences between educ and educ2)
+
+. recode job (0 = 1 "No job") (1 = 2 "Has job"), gen(job2)
+(229432 differences between job and job2)
+
+. 
+. // Copy descipriptives table for categorical variables
+. putdocx begin 
+
+. putdocx save "05_Manual_Results\Descriptives.docx", replace
+successfully replaced "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+
+. 
+. foreach var of varlist survey_poornew survey_poorold {  
+  2.     foreach ind of varlist region urb2 sex ms educ2 job2 {
+  3.         preserve
+  4.         // Prepare tempfile stats with tempname memhold
+.         tempname memhold
+  5.         tempfile stats
+  6.         postfile `memhold' str60 (Category Poor2012 NonPoor2012 Poor2015 NonPoor2015 Poor2018 NonPoor2018) using "`stats'"
+  7. 
+.         // Quietly run svy: tab command
+.         qui svy: tab `ind' `var', missing
+  8.         // Relevant scalars:
+.         // Number of rows: e(r) - number of rows
+.         // Number of columns: e(c) - number of columns
+.         // Relevant matrices:
+.         // e(Obs) - number of observations
+.         // e(Prop) - proportions of each cell across entire table
+.         // e(Row) - list of categories (but as 1 x n matrix)
+. 
+.         // Store column totals of proportion in a new matrix called coltotal
+.         mata : st_matrix("coltot", colsum(st_matrix("e(Prop)")))
+  9.         matrix coltotal = J(1, rowsof(e(Prop)), 1) * e(Prop)
+ 10. 
+.         // Store locals for loop
+.         local colnames poor2012 nonpoor2012 poor2015 nonpoor2015 poor2018 nonpoor2018
+ 11.         local lab : value label `ind'
+ 12. 
+.         // Post file
+.         forvalues i = 1/`e(r)' {
+ 13.             forvalues j = 1/`e(c)' {
+ 14.                 local colname_`j': word `j' of `colnames'
+ 15.                 local `colname_`j'': di %6.0fc e(Obs)[`i',`j'] " (" %3.1f e(Prop)[`i',`j']*100/coltotal[1,`j'] "%)"
+ 16.             }
+ 17.             local catname_`i' `: label `lab' `i''
+ 18.             post `memhold' ("`catname_`i''") ("`poor2012'") ("`nonpoor2012'") ("`poor2015'") ("`nonpoor2015'") ("`poor2018'") ("`nonpoor2018'")
+ 19.         }
+ 20.         postclose `memhold'
+ 21. 
+.         // Open file
+.         use "`stats'", clear
+ 22. 
+.         // Post file on Word document of descriptives
+.         putdocx begin
+ 23.         putdocx table table_`ind'_`var' = data(Category Poor2012 NonPoor2012 Poor2015 NonPoor2015 Poor2018 NonPoor2018), ///
+>             title("Descriptive table of `ind' by `var'")
+ 24.         putdocx table table_`ind'_`var'(1,.), addrows(1, before)
+ 25.         local colheaders " "Category" "Poor 2012" "Non-poor 2012" "Poor 2015" "Non-poor 2015" "Poor2018" "Non-poor 2018" "
+ 26.         forvalues k = 1/7 {
+ 27.             local colhead: word `k' of `colheaders'
+ 28.             putdocx table table_`ind'_`var'(1,`k') = ("`colhead'")
+ 29.         }
+ 30.         putdocx save "05_Manual_Results\Descriptives.docx", append
+ 31. 
+.         restore
+ 32.     }
+ 33. }
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+successfully appended to "C:/Users/neljasonhaw/OneDrive/Documents/Teaching/Research/FIES 2012 to 2018/Code/05_Manual_Results/Descriptives.docx"
+
+. 
+. // Copy the results of the means and SD manually because SD is not stored in ereturn list
+. foreach var of varlist survey_poornew survey_poorold {
+  2.         foreach ind of varlist fsize age {
+  3.                 svy: mean `ind', over(`var')
+  4.                 estat sd
+  5.         }
+  6. }
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832               Number of obs   =        229,432
+Number of PSUs   = 17,077               Population size = 20,395,818,012
+                                        Design df       =         16,245
+
+------------------------------------------------------------------------
+                       |             Linearized
+                       |       Mean   std. err.     [95% conf. interval]
+-----------------------+------------------------------------------------
+c.fsize@survey_poornew |
+            2012 Poor  |   5.919138   .0298833      5.860564    5.977713
+        2012 Non-Poor  |   4.384279   .0152482      4.354391    4.414167
+            2015 Poor  |   5.945242   .0306296      5.885204    6.005279
+        2015 Non-Poor  |   4.326624   .0152822      4.296669    4.356578
+            2018 Poor  |   6.003364   .0230585      5.958167    6.048561
+        2018 Non-Poor  |   4.246418   .0090914      4.228598    4.264238
+------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+
+-------------------------------------
+        Over |       Mean   Std. dev.
+-------------+-----------------------
+     c.fsize@|
+survey_poo~w |
+  2012 Poor  |   5.919138    1.570512
+2012 Non-..  |   4.384279    1.357129
+  2015 Poor  |   5.945242    1.570126
+2015 Non-..  |   4.326624    1.360857
+  2018 Poor  |   6.003364    4.349181
+2018 Non-..  |   4.246418    3.633051
+-------------------------------------
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832             Number of obs   =        229,432
+Number of PSUs   = 17,077             Population size = 20,395,818,012
+                                      Design df       =         16,245
+
+----------------------------------------------------------------------
+                     |             Linearized
+                     |       Mean   std. err.     [95% conf. interval]
+---------------------+------------------------------------------------
+c.age@survey_poornew |
+          2012 Poor  |   48.01558   .1739309      47.67466    48.35651
+      2012 Non-Poor  |   51.50037   .1103516      51.28407    51.71668
+          2015 Poor  |   48.24993   .1774105      47.90219    48.59768
+      2015 Non-Poor  |   52.26406   .1091352      52.05015    52.47798
+          2018 Poor  |   46.56741    .139433       46.2941    46.84071
+      2018 Non-Poor  |    50.7688   .0704059       50.6308    50.90681
+----------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+
+-------------------------------------
+        Over |       Mean   Std. dev.
+-------------+-----------------------
+       c.age@|
+survey_poo~w |
+  2012 Poor  |   48.01558    9.637771
+2012 Non-..  |   51.50037    9.177829
+  2015 Poor  |   48.24993     9.75263
+2015 Non-..  |   52.26406    9.238103
+  2018 Poor  |   46.56741    28.10239
+2018 Non-..  |    50.7688    26.53926
+-------------------------------------
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832               Number of obs   =        229,432
+Number of PSUs   = 17,077               Population size = 20,395,818,012
+                                        Design df       =         16,245
+
+------------------------------------------------------------------------
+                       |             Linearized
+                       |       Mean   std. err.     [95% conf. interval]
+-----------------------+------------------------------------------------
+c.fsize@survey_poorold |
+            2012 Poor  |   5.919138   .0298833      5.860564    5.977713
+        2012 Non-Poor  |   4.384279   .0152482      4.354391    4.414167
+            2015 Poor  |    5.98166   .0321168      5.918708    6.044613
+        2015 Non-Poor  |   4.349527   .0151545      4.319822    4.379231
+            2018 Poor  |   6.003364   .0230585      5.958167    6.048561
+        2018 Non-Poor  |   4.246418   .0090914      4.228598    4.264238
+------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+
+-------------------------------------
+        Over |       Mean   Std. dev.
+-------------+-----------------------
+     c.fsize@|
+survey_poo~d |
+  2012 Poor  |   5.919138    1.570512
+2012 Non-..  |   4.384279    1.357129
+  2015 Poor  |    5.98166    1.571917
+2015 Non-..  |   4.349527    1.368283
+  2018 Poor  |   6.003364    4.349181
+2018 Non-..  |   4.246418    3.633051
+-------------------------------------
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832             Number of obs   =        229,432
+Number of PSUs   = 17,077             Population size = 20,395,818,012
+                                      Design df       =         16,245
+
+----------------------------------------------------------------------
+                     |             Linearized
+                     |       Mean   std. err.     [95% conf. interval]
+---------------------+------------------------------------------------
+c.age@survey_poorold |
+          2012 Poor  |   48.01558   .1739309      47.67466    48.35651
+      2012 Non-Poor  |   51.50037   .1103516      51.28407    51.71668
+          2015 Poor  |   48.08325   .1832631      47.72404    48.44247
+      2015 Non-Poor  |   52.22234   .1077531      52.01113    52.43354
+          2018 Poor  |   46.56741    .139433       46.2941    46.84071
+      2018 Non-Poor  |    50.7688   .0704059       50.6308    50.90681
+----------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+
+-------------------------------------
+        Over |       Mean   Std. dev.
+-------------+-----------------------
+       c.age@|
+survey_poo~d |
+  2012 Poor  |   48.01558    9.637771
+2012 Non-..  |   51.50037    9.177829
+  2015 Poor  |   48.08325    9.745979
+2015 Non-..  |   52.22234    9.251131
+  2018 Poor  |   46.56741    28.10239
+2018 Non-..  |    50.7688    26.53926
+-------------------------------------
+
+. *************************************************************************************
+. 
+. 
+. 
+. 
+. 
+. *************************************************************************************
+. ******** Store summary data in a new Stata .dta file and this will be fed into the R code to generate the dumbbell plot
+. postfile dumbbell str20 (outcome poverty) int survey float (nonpoor poor N) ///
+>         using "02_Figures\dumbbell.dta", replace
+
+. // Run summary statistics commands for prevalence
+. foreach var of varlist prev_tobacco prev_alcohol prev_health {
+  2.         foreach poor of varlist poor_new2015 poor_old2015 {
+  3.                 svy: mean `var', over(survey `poor')
+  4.                 post dumbbell ("`var'") ("`poor'") (2012) (e(b)[1,1]) (e(b)[1,2]) (e(_N)[1,1] + e(_N)[1,2])
+  5.                 post dumbbell ("`var'") ("`poor'") (2015) (e(b)[1,3]) (e(b)[1,4]) (e(_N)[1,3] + e(_N)[1,4])
+  6.                 post dumbbell ("`var'") ("`poor'") (2018) (e(b)[1,5]) (e(b)[1,6]) (e(_N)[1,5] + e(_N)[1,6])
+  7.         }
+  8. }
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                           Number of obs   =        229,432
+Number of PSUs   = 17,077                           Population size = 20,395,818,012
+                                                    Design df       =         16,245
+
+------------------------------------------------------------------------------------
+                                   |             Linearized
+                                   |       Mean   std. err.     [95% conf. interval]
+-----------------------------------+------------------------------------------------
+c.prev_tobacco@survey#poor_new2015 |
+                          2012#No  |   .5281905   .0039855      .5203784    .5360025
+                         2012#Yes  |   .6774919   .0064277      .6648929    .6900909
+                          2015#No  |   .5018166   .0037622      .4944423     .509191
+                         2015#Yes  |   .6485802   .0064525      .6359325    .6612278
+                          2018#No  |   .4838312   .0025353      .4788616    .4888007
+                         2018#Yes  |   .5937887   .0050016      .5839849    .6035925
+------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                           Number of obs   =        229,432
+Number of PSUs   = 17,077                           Population size = 20,395,818,012
+                                                    Design df       =         16,245
+
+------------------------------------------------------------------------------------
+                                   |             Linearized
+                                   |       Mean   std. err.     [95% conf. interval]
+-----------------------------------+------------------------------------------------
+c.prev_tobacco@survey#poor_old2015 |
+                          2012#No  |   .5281905   .0039855      .5203784    .5360025
+                         2012#Yes  |   .6774919   .0064277      .6648929    .6900909
+                          2015#No  |   .5041505   .0037398      .4968202    .5114809
+                         2015#Yes  |    .650579   .0067251       .637397     .663761
+                          2018#No  |   .4838312   .0025353      .4788616    .4888007
+                         2018#Yes  |   .5937887   .0050016      .5839849    .6035925
+------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                           Number of obs   =        229,432
+Number of PSUs   = 17,077                           Population size = 20,395,818,012
+                                                    Design df       =         16,245
+
+------------------------------------------------------------------------------------
+                                   |             Linearized
+                                   |       Mean   std. err.     [95% conf. interval]
+-----------------------------------+------------------------------------------------
+c.prev_alcohol@survey#poor_new2015 |
+                          2012#No  |   .6334797   .0040585      .6255245    .6414348
+                         2012#Yes  |   .6444547   .0086658      .6274688    .6614407
+                          2015#No  |   .5983537   .0042102      .5901013    .6066062
+                         2015#Yes  |    .604482   .0092159      .5864177    .6225462
+                          2018#No  |   .6317386    .002698      .6264502    .6370269
+                         2018#Yes  |    .576546   .0060705      .5646471    .5884449
+------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                           Number of obs   =        229,432
+Number of PSUs   = 17,077                           Population size = 20,395,818,012
+                                                    Design df       =         16,245
+
+------------------------------------------------------------------------------------
+                                   |             Linearized
+                                   |       Mean   std. err.     [95% conf. interval]
+-----------------------------------+------------------------------------------------
+c.prev_alcohol@survey#poor_old2015 |
+                          2012#No  |   .6334797   .0040585      .6255245    .6414348
+                         2012#Yes  |   .6444547   .0086658      .6274688    .6614407
+                          2015#No  |   .5991201    .004213      .5908621    .6073781
+                         2015#Yes  |   .6011762   .0093194      .5829091    .6194432
+                          2018#No  |   .6317386    .002698      .6264502    .6370269
+                         2018#Yes  |    .576546   .0060705      .5646471    .5884449
+------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                          Number of obs   =        229,432
+Number of PSUs   = 17,077                          Population size = 20,395,818,012
+                                                   Design df       =         16,245
+
+-----------------------------------------------------------------------------------
+                                  |             Linearized
+                                  |       Mean   std. err.     [95% conf. interval]
+----------------------------------+------------------------------------------------
+c.prev_health@survey#poor_new2015 |
+                         2012#No  |    .952394   .0020936      .9482903    .9564978
+                        2012#Yes  |   .9445158   .0038999      .9368715    .9521602
+                         2015#No  |   .9676432    .002149       .963431    .9718554
+                        2015#Yes  |   .9538083   .0036561       .946642    .9609746
+                         2018#No  |   .9638448   .0010717      .9617441    .9659455
+                        2018#Yes  |    .951493   .0025299      .9465342    .9564518
+-----------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                          Number of obs   =        229,432
+Number of PSUs   = 17,077                          Population size = 20,395,818,012
+                                                   Design df       =         16,245
+
+-----------------------------------------------------------------------------------
+                                  |             Linearized
+                                  |       Mean   std. err.     [95% conf. interval]
+----------------------------------+------------------------------------------------
+c.prev_health@survey#poor_old2015 |
+                         2012#No  |    .952394   .0020936      .9482903    .9564978
+                        2012#Yes  |   .9445158   .0038999      .9368715    .9521602
+                         2015#No  |     .96774   .0021168      .9635909    .9718891
+                        2015#Yes  |   .9520147   .0039002      .9443698    .9596595
+                         2018#No  |   .9638448   .0010717      .9617441    .9659455
+                        2018#Yes  |    .951493   .0025299      .9465342    .9564518
+-----------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+
+. // Run summary statistics commands for share and absolute value, subsetting on prevalence
+. local outcomes_group "share_tobacco_totex share_alcohol_totex share_health_totex tobacco_2018 alcohol_2018 health_2018"
+
+. local subsets_group "prev_tobacco prev_alcohol prev_health prev_alcohol prev_alcohol prev_health"
+
+. local n: word count `outcomes_group'
+
+. forvalues i = 1/`n' {
+  2.         local outcomes: word `i' of `outcomes_group'
+  3.         local subsets: word `i' of `subsets_group'
+  4.         foreach poor of varlist poor_new2015 poor_old2015 {
+  5.                 svy, subpop(`subsets'): mean `outcomes', over(survey `poor')
+  6.                 post dumbbell ("`outcomes'") ("`poor'") (2012) (e(b)[1,1]) (e(b)[1,2]) (e(_N)[1,1] + e(_N)[1,2])
+  7.                 post dumbbell ("`outcomes'") ("`poor'") (2015) (e(b)[1,3]) (e(b)[1,4]) (e(_N)[1,3] + e(_N)[1,4])
+  8.                 post dumbbell ("`outcomes'") ("`poor'") (2018) (e(b)[1,5]) (e(b)[1,6]) (e(_N)[1,5] + e(_N)[1,6])
+  9.         }
+ 10. }
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    817                                  Number of obs   =        229,355
+Number of PSUs   = 17,051                                  Population size = 20,374,857,788
+                                                           Subpop. no. obs =        117,544
+                                                           Subpop. size    = 10,894,140,111
+                                                           Design df       =         16,234
+
+-------------------------------------------------------------------------------------------
+                                          |             Linearized
+                                          |       Mean   std. err.     [95% conf. interval]
+------------------------------------------+------------------------------------------------
+c.share_tobacco_totex@survey#poor_new2015 |
+                                 2012#No  |   .0202861   .0002244      .0198463     .020726
+                                2012#Yes  |   .0228053   .0004542      .0219151    .0236956
+                                 2015#No  |    .028887   .0003292      .0282418    .0295322
+                                2015#Yes  |   .0292022   .0005587       .028107    .0302973
+                                 2018#No  |   .0300234   .0002288      .0295749    .0304718
+                                2018#Yes  |   .0256916   .0003814      .0249441    .0264392
+-------------------------------------------------------------------------------------------
+Note: 15 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    817                                  Number of obs   =        229,355
+Number of PSUs   = 17,051                                  Population size = 20,374,857,788
+                                                           Subpop. no. obs =        117,544
+                                                           Subpop. size    = 10,894,140,111
+                                                           Design df       =         16,234
+
+-------------------------------------------------------------------------------------------
+                                          |             Linearized
+                                          |       Mean   std. err.     [95% conf. interval]
+------------------------------------------+------------------------------------------------
+c.share_tobacco_totex@survey#poor_old2015 |
+                                 2012#No  |   .0202861   .0002244      .0198463     .020726
+                                2012#Yes  |   .0228053   .0004542      .0219151    .0236956
+                                 2015#No  |   .0288622   .0003265      .0282222    .0295023
+                                2015#Yes  |   .0293279   .0005911      .0281693    .0304864
+                                 2018#No  |   .0300234   .0002288      .0295749    .0304718
+                                2018#Yes  |   .0256916   .0003814      .0249441    .0264392
+-------------------------------------------------------------------------------------------
+Note: 15 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    824                                  Number of obs   =        229,387
+Number of PSUs   = 17,064                                  Population size = 20,386,639,429
+                                                           Subpop. no. obs =        141,949
+                                                           Subpop. size    = 12,620,433,887
+                                                           Design df       =         16,240
+
+-------------------------------------------------------------------------------------------
+                                          |             Linearized
+                                          |       Mean   std. err.     [95% conf. interval]
+------------------------------------------+------------------------------------------------
+c.share_alcohol_totex@survey#poor_new2015 |
+                                 2012#No  |   .0123125   .0001636      .0119919    .0126331
+                                2012#Yes  |   .0126378   .0002768      .0120953    .0131804
+                                 2015#No  |   .0109842   .0001498      .0106906    .0112778
+                                2015#Yes  |   .0114343   .0002699      .0109053    .0119633
+                                 2018#No  |   .0107193   .0000909      .0105412    .0108974
+                                2018#Yes  |   .0102286    .000157      .0099209    .0105363
+-------------------------------------------------------------------------------------------
+Note: 8 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    824                                  Number of obs   =        229,387
+Number of PSUs   = 17,064                                  Population size = 20,386,639,429
+                                                           Subpop. no. obs =        141,949
+                                                           Subpop. size    = 12,620,433,887
+                                                           Design df       =         16,240
+
+-------------------------------------------------------------------------------------------
+                                          |             Linearized
+                                          |       Mean   std. err.     [95% conf. interval]
+------------------------------------------+------------------------------------------------
+c.share_alcohol_totex@survey#poor_old2015 |
+                                 2012#No  |   .0123125   .0001636      .0119919    .0126331
+                                2012#Yes  |   .0126378   .0002768      .0120953    .0131804
+                                 2015#No  |   .0109859   .0001493      .0106933    .0112785
+                                2015#Yes  |   .0114705    .000284      .0109138    .0120273
+                                 2018#No  |   .0107193   .0000909      .0105412    .0108974
+                                2018#Yes  |   .0102286    .000157      .0099209    .0105363
+-------------------------------------------------------------------------------------------
+Note: 8 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                                 Number of obs   =        229,432
+Number of PSUs   = 17,077                                 Population size = 20,395,818,012
+                                                          Subpop. no. obs =        219,835
+                                                          Subpop. size    = 19,557,370,537
+                                                          Design df       =         16,245
+
+------------------------------------------------------------------------------------------
+                                         |             Linearized
+                                         |       Mean   std. err.     [95% conf. interval]
+-----------------------------------------+------------------------------------------------
+c.share_health_totex@survey#poor_new2015 |
+                                2012#No  |   .0323628   .0004961      .0313905    .0333351
+                               2012#Yes  |   .0160187   .0004499      .0151369    .0169005
+                                2015#No  |   .0329942   .0004672      .0320785    .0339099
+                               2015#Yes  |   .0166231   .0005786       .015489    .0177573
+                                2018#No  |   .0247652   .0002262      .0243218    .0252086
+                               2018#Yes  |   .0121377   .0002527      .0116424    .0126331
+------------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                                 Number of obs   =        229,432
+Number of PSUs   = 17,077                                 Population size = 20,395,818,012
+                                                          Subpop. no. obs =        219,835
+                                                          Subpop. size    = 19,557,370,537
+                                                          Design df       =         16,245
+
+------------------------------------------------------------------------------------------
+                                         |             Linearized
+                                         |       Mean   std. err.     [95% conf. interval]
+-----------------------------------------+------------------------------------------------
+c.share_health_totex@survey#poor_old2015 |
+                                2012#No  |   .0323628   .0004961      .0313905    .0333351
+                               2012#Yes  |   .0160187   .0004499      .0151369    .0169005
+                                2015#No  |   .0327664   .0004618      .0318613    .0336715
+                               2015#Yes  |   .0162205   .0005834      .0150769    .0173641
+                                2018#No  |   .0247652   .0002262      .0243218    .0252086
+                               2018#Yes  |   .0121377   .0002527      .0116424    .0126331
+------------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    824                           Number of obs   =        229,387
+Number of PSUs   = 17,064                           Population size = 20,386,639,429
+                                                    Subpop. no. obs =        141,949
+                                                    Subpop. size    = 12,620,433,887
+                                                    Design df       =         16,240
+
+------------------------------------------------------------------------------------
+                                   |             Linearized
+                                   |       Mean   std. err.     [95% conf. interval]
+-----------------------------------+------------------------------------------------
+c.tobacco_2018@survey#poor_new2015 |
+                          2012#No  |   2640.732   43.37928      2555.704     2725.76
+                         2012#Yes  |   1671.799   39.22669       1594.91    1748.688
+                          2015#No  |   3681.961   57.69607       3568.87    3795.051
+                         2015#Yes  |   2485.076   60.58259      2366.328    2603.825
+                          2018#No  |    4093.83   45.51931      4004.607    4183.053
+                         2018#Yes  |   2180.004   53.59292      2074.955    2285.052
+------------------------------------------------------------------------------------
+Note: 8 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    824                           Number of obs   =        229,387
+Number of PSUs   = 17,064                           Population size = 20,386,639,429
+                                                    Subpop. no. obs =        141,949
+                                                    Subpop. size    = 12,620,433,887
+                                                    Design df       =         16,240
+
+------------------------------------------------------------------------------------
+                                   |             Linearized
+                                   |       Mean   std. err.     [95% conf. interval]
+-----------------------------------+------------------------------------------------
+c.tobacco_2018@survey#poor_old2015 |
+                          2012#No  |   2640.732   43.37928      2555.704     2725.76
+                         2012#Yes  |   1671.799   39.22669       1594.91    1748.688
+                          2015#No  |    3661.17   57.13342      3549.182    3773.157
+                         2015#Yes  |    2470.12   64.05713      2344.561    2595.679
+                          2018#No  |    4093.83   45.51931      4004.607    4183.053
+                         2018#Yes  |   2180.004   53.59292      2074.955    2285.052
+------------------------------------------------------------------------------------
+Note: 8 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    824                           Number of obs   =        229,387
+Number of PSUs   = 17,064                           Population size = 20,386,639,429
+                                                    Subpop. no. obs =        141,949
+                                                    Subpop. size    = 12,620,433,887
+                                                    Design df       =         16,240
+
+------------------------------------------------------------------------------------
+                                   |             Linearized
+                                   |       Mean   std. err.     [95% conf. interval]
+-----------------------------------+------------------------------------------------
+c.alcohol_2018@survey#poor_new2015 |
+                          2012#No  |   2399.797   34.07738      2333.002    2466.593
+                         2012#Yes  |    1214.32   28.20095      1159.043    1269.597
+                          2015#No  |   2213.544   29.35439      2156.007    2271.082
+                         2015#Yes  |   1215.306    29.1954       1158.08    1272.532
+                          2018#No  |   2304.838   21.92648      2261.859    2347.816
+                         2018#Yes  |   1165.003   19.97099      1125.858    1204.149
+------------------------------------------------------------------------------------
+Note: 8 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    824                           Number of obs   =        229,387
+Number of PSUs   = 17,064                           Population size = 20,386,639,429
+                                                    Subpop. no. obs =        141,949
+                                                    Subpop. size    = 12,620,433,887
+                                                    Design df       =         16,240
+
+------------------------------------------------------------------------------------
+                                   |             Linearized
+                                   |       Mean   std. err.     [95% conf. interval]
+-----------------------------------+------------------------------------------------
+c.alcohol_2018@survey#poor_old2015 |
+                          2012#No  |   2399.797   34.07738      2333.002    2466.593
+                         2012#Yes  |    1214.32   28.20095      1159.043    1269.597
+                          2015#No  |   2195.995   29.02526      2139.103    2252.888
+                         2015#Yes  |   1203.886   30.42163      1144.256    1263.515
+                          2018#No  |   2304.838   21.92648      2261.859    2347.816
+                         2018#Yes  |   1165.003   19.97099      1125.858    1204.149
+------------------------------------------------------------------------------------
+Note: 8 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                          Number of obs   =        229,432
+Number of PSUs   = 17,077                          Population size = 20,395,818,012
+                                                   Subpop. no. obs =        219,835
+                                                   Subpop. size    = 19,557,370,537
+                                                   Design df       =         16,245
+
+-----------------------------------------------------------------------------------
+                                  |             Linearized
+                                  |       Mean   std. err.     [95% conf. interval]
+----------------------------------+------------------------------------------------
+c.health_2018@survey#poor_new2015 |
+                         2012#No  |   10205.03   300.6471      9615.732    10794.34
+                        2012#Yes  |   1675.386   61.30535      1555.221    1795.551
+                         2015#No  |   10417.45   258.9057      9909.964    10924.93
+                        2015#Yes  |   1988.519   87.07638       1817.84    2159.198
+                         2018#No  |   7548.153   148.9931       7256.11    7840.196
+                        2018#Yes  |   1456.226    41.6872      1374.515    1537.938
+-----------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                          Number of obs   =        229,432
+Number of PSUs   = 17,077                          Population size = 20,395,818,012
+                                                   Subpop. no. obs =        219,835
+                                                   Subpop. size    = 19,557,370,537
+                                                   Design df       =         16,245
+
+-----------------------------------------------------------------------------------
+                                  |             Linearized
+                                  |       Mean   std. err.     [95% conf. interval]
+----------------------------------+------------------------------------------------
+c.health_2018@survey#poor_old2015 |
+                         2012#No  |   10205.03   300.6471      9615.732    10794.34
+                        2012#Yes  |   1675.386   61.30535      1555.221    1795.551
+                         2015#No  |   10275.64   254.6672      9776.468    10774.82
+                        2015#Yes  |   1907.563   89.37836      1732.371    2082.754
+                         2018#No  |   7548.153   148.9931       7256.11    7840.196
+                        2018#Yes  |   1456.226    41.6872      1374.515    1537.938
+-----------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+
+. postclose dumbbell
+
+. 
+. **** Additional modifications to the dumbbell.dta file
+. use "02_Figures\dumbbell.dta", clear
+
+. // Expenditure type
+. gen exp_type = ""
+(54 missing values generated)
+
+. replace exp_type = "tobacco" if ustrregexm(outcome, "tobacco")
+variable exp_type was str1 now str7
+(18 real changes made)
+
+. replace exp_type = "alcohol" if ustrregexm(outcome, "alcohol")
+(18 real changes made)
+
+. replace exp_type = "OOP health expenditure" if ustrregexm(outcome, "health")
+variable exp_type was str7 now str22
+(18 real changes made)
+
+. // Outcome type
+. gen outcome_type = ""
+(54 missing values generated)
+
+. replace outcome_type = "Prevalence" if ustrregexm(outcome, "prev")
+variable outcome_type was str1 now str10
+(18 real changes made)
+
+. replace outcome_type = "Share of household expenditures" if ustrregexm(outcome, "share")
+variable outcome_type was str10 now str31
+(18 real changes made)
+
+. replace outcome_type = "Absolute value in 2018 PHP" if ustrregexm(outcome, "2018")
+(18 real changes made)
+
+. // Difference
+. gen diff = poor - nonpoor
+
+. // Sort
+. sort outcome_type exp_type survey poverty
+
+. // Check 2015 values between the old and new poverty threshold
+. // Very little difference, retain new poverty threshold for final analysis
+. list
+
+     +---------------------------------------------------------------------------------------------------------------------------------------------------+
+     |             outcome        poverty   survey    nonpoor       poor        N                 exp_type                      outcome_type        diff |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+  1. |         health_2018   poor_new2015     2012   10205.03   1675.386    38200   OOP health expenditure        Absolute value in 2018 PHP   -8529.648 |
+  2. |         health_2018   poor_old2015     2012   10205.03   1675.386    38200   OOP health expenditure        Absolute value in 2018 PHP   -8529.648 |
+  3. |         health_2018   poor_new2015     2015   10417.45   1988.519    40066   OOP health expenditure        Absolute value in 2018 PHP    -8428.93 |
+  4. |         health_2018   poor_old2015     2015   10275.64   1907.563    40066   OOP health expenditure        Absolute value in 2018 PHP   -8368.081 |
+  5. |         health_2018   poor_new2015     2018   7548.153   1456.226   141569   OOP health expenditure        Absolute value in 2018 PHP   -6091.927 |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+  6. |         health_2018   poor_old2015     2018   7548.153   1456.226   141569   OOP health expenditure        Absolute value in 2018 PHP   -6091.927 |
+  7. |        alcohol_2018   poor_new2015     2012   2399.797    1214.32    25580                  alcohol        Absolute value in 2018 PHP   -1185.477 |
+  8. |        alcohol_2018   poor_old2015     2012   2399.797    1214.32    25580                  alcohol        Absolute value in 2018 PHP   -1185.477 |
+  9. |        alcohol_2018   poor_new2015     2015   2213.544   1215.306    24714                  alcohol        Absolute value in 2018 PHP   -998.2386 |
+ 10. |        alcohol_2018   poor_old2015     2015   2195.996   1203.886    24714                  alcohol        Absolute value in 2018 PHP     -992.11 |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+ 11. |        alcohol_2018   poor_new2015     2018   2304.838   1165.003    91655                  alcohol        Absolute value in 2018 PHP   -1139.834 |
+ 12. |        alcohol_2018   poor_old2015     2018   2304.838   1165.003    91655                  alcohol        Absolute value in 2018 PHP   -1139.834 |
+ 13. |        tobacco_2018   poor_new2015     2012   2640.732   1671.799    25580                  tobacco        Absolute value in 2018 PHP   -968.9331 |
+ 14. |        tobacco_2018   poor_old2015     2012   2640.732   1671.799    25580                  tobacco        Absolute value in 2018 PHP   -968.9331 |
+ 15. |        tobacco_2018   poor_new2015     2015   3681.961   2485.076    24714                  tobacco        Absolute value in 2018 PHP   -1196.885 |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+ 16. |        tobacco_2018   poor_old2015     2015    3661.17    2470.12    24714                  tobacco        Absolute value in 2018 PHP    -1191.05 |
+ 17. |        tobacco_2018   poor_new2015     2018    4093.83   2180.003    91655                  tobacco        Absolute value in 2018 PHP   -1913.827 |
+ 18. |        tobacco_2018   poor_old2015     2018    4093.83   2180.003    91655                  tobacco        Absolute value in 2018 PHP   -1913.827 |
+ 19. |         prev_health   poor_new2015     2012    .952394   .9445158    40171   OOP health expenditure                        Prevalence   -.0078782 |
+ 20. |         prev_health   poor_old2015     2012    .952394   .9445158    40171   OOP health expenditure                        Prevalence   -.0078782 |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+ 21. |         prev_health   poor_new2015     2015   .9676432   .9538083    41544   OOP health expenditure                        Prevalence   -.0138349 |
+ 22. |         prev_health   poor_old2015     2015     .96774   .9520147    41544   OOP health expenditure                        Prevalence   -.0157253 |
+ 23. |         prev_health   poor_new2015     2018   .9638448    .951493   147717   OOP health expenditure                        Prevalence   -.0123518 |
+ 24. |         prev_health   poor_old2015     2018   .9638448    .951493   147717   OOP health expenditure                        Prevalence   -.0123518 |
+ 25. |        prev_alcohol   poor_new2015     2012   .6334797   .6444547    40171                  alcohol                        Prevalence    .0109751 |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+ 26. |        prev_alcohol   poor_old2015     2012   .6334797   .6444547    40171                  alcohol                        Prevalence    .0109751 |
+ 27. |        prev_alcohol   poor_new2015     2015   .5983537    .604482    41544                  alcohol                        Prevalence    .0061283 |
+ 28. |        prev_alcohol   poor_old2015     2015   .5991201   .6011761    41544                  alcohol                        Prevalence    .0020561 |
+ 29. |        prev_alcohol   poor_new2015     2018   .6317385    .576546   147717                  alcohol                        Prevalence   -.0551925 |
+ 30. |        prev_alcohol   poor_old2015     2018   .6317385    .576546   147717                  alcohol                        Prevalence   -.0551925 |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+ 31. |        prev_tobacco   poor_new2015     2012   .5281904   .6774918    40171                  tobacco                        Prevalence    .1493014 |
+ 32. |        prev_tobacco   poor_old2015     2012   .5281904   .6774918    40171                  tobacco                        Prevalence    .1493014 |
+ 33. |        prev_tobacco   poor_new2015     2015   .5018166   .6485801    41544                  tobacco                        Prevalence    .1467635 |
+ 34. |        prev_tobacco   poor_old2015     2015   .5041505    .650579    41544                  tobacco                        Prevalence    .1464285 |
+ 35. |        prev_tobacco   poor_new2015     2018   .4838312   .5937887   147717                  tobacco                        Prevalence    .1099575 |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+ 36. |        prev_tobacco   poor_old2015     2018   .4838312   .5937887   147717                  tobacco                        Prevalence    .1099575 |
+ 37. |  share_health_totex   poor_new2015     2012   .0323628   .0160187    38200   OOP health expenditure   Share of household expenditures   -.0163441 |
+ 38. |  share_health_totex   poor_old2015     2012   .0323628   .0160187    38200   OOP health expenditure   Share of household expenditures   -.0163441 |
+ 39. |  share_health_totex   poor_new2015     2015   .0329942   .0166231    40066   OOP health expenditure   Share of household expenditures    -.016371 |
+ 40. |  share_health_totex   poor_old2015     2015   .0327664   .0162205    40066   OOP health expenditure   Share of household expenditures   -.0165459 |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+ 41. |  share_health_totex   poor_new2015     2018   .0247652   .0121377   141569   OOP health expenditure   Share of household expenditures   -.0126275 |
+ 42. |  share_health_totex   poor_old2015     2018   .0247652   .0121377   141569   OOP health expenditure   Share of household expenditures   -.0126275 |
+ 43. | share_alcohol_totex   poor_new2015     2012   .0123125   .0126378    25580                  alcohol   Share of household expenditures    .0003253 |
+ 44. | share_alcohol_totex   poor_old2015     2012   .0123125   .0126378    25580                  alcohol   Share of household expenditures    .0003253 |
+ 45. | share_alcohol_totex   poor_new2015     2015   .0109842   .0114343    24714                  alcohol   Share of household expenditures    .0004501 |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+ 46. | share_alcohol_totex   poor_old2015     2015   .0109859   .0114705    24714                  alcohol   Share of household expenditures    .0004846 |
+ 47. | share_alcohol_totex   poor_new2015     2018   .0107193   .0102286    91655                  alcohol   Share of household expenditures   -.0004907 |
+ 48. | share_alcohol_totex   poor_old2015     2018   .0107193   .0102286    91655                  alcohol   Share of household expenditures   -.0004907 |
+ 49. | share_tobacco_totex   poor_new2015     2012   .0202861   .0228053    22705                  tobacco   Share of household expenditures    .0025192 |
+ 50. | share_tobacco_totex   poor_old2015     2012   .0202861   .0228053    22705                  tobacco   Share of household expenditures    .0025192 |
+     |---------------------------------------------------------------------------------------------------------------------------------------------------|
+ 51. | share_tobacco_totex   poor_new2015     2015    .028887   .0292022    22095                  tobacco   Share of household expenditures    .0003152 |
+ 52. | share_tobacco_totex   poor_old2015     2015   .0288622   .0293279    22095                  tobacco   Share of household expenditures    .0004656 |
+ 53. | share_tobacco_totex   poor_new2015     2018   .0300234   .0256916    72744                  tobacco   Share of household expenditures   -.0043317 |
+ 54. | share_tobacco_totex   poor_old2015     2018   .0300234   .0256916    72744                  tobacco   Share of household expenditures   -.0043317 |
+     +---------------------------------------------------------------------------------------------------------------------------------------------------+
+
+. preserve
+
+. drop if poverty == "poor_old2015"
+(27 observations deleted)
+
+. save "02_Figures\dumbbell.dta", replace
+file 02_Figures\dumbbell.dta saved
+
+. restore
+
+. 
+. preserve
+
+. keep if survey == 2015
+(36 observations deleted)
+
+. gen pov_thres = ""
+(18 missing values generated)
+
+. replace pov_thres = "Original" if poverty == "poor_old2015"
+variable pov_thres was str1 now str8
+(9 real changes made)
+
+. replace pov_thres = "Revised" if poverty == "poor_new2015" 
+(9 real changes made)
+
+. save "02_Figures\dumbbell_sensi.dta", replace
+file 02_Figures\dumbbell_sensi.dta saved
+
+. restore
+
+. *************************************************************************************
+. 
+. log close Log02_Descriptives
+      name:  Log02_Descriptives
+       log:  C:\Users\neljasonhaw\OneDrive\Documents\Teaching\Research\FIES 2012 to 2018\Code\03_Log_Files\02 Descriptives.log
+  log type:  text
+ closed on:   3 Aug 2021, 16:12:55
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

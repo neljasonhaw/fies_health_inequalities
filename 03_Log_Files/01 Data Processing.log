@@ -1,0 +1,1413 @@
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  Log01_DataProcessing
+       log:  C:\Users\neljasonhaw\OneDrive\Documents\Teaching\Research\FIES 2012 to 2018\Code\03_Log_Files\01 Data Processing.log
+  log type:  text
+ opened on:   3 Aug 2021, 13:55:49
+
+. set more off
+
+. version 17
+
+. 
+. 
+. *************************************************************************************
+. ******** EXTRACT VARIABLES FROM ALL PUF *******
+. ** Description **       ** 2012 varname **              ** 2015 varname **              ** 2018 varname **
+. ** ** ID variable **    other_id                                other_id                                sequence_no
+. ** ** svyset declaration variables **
+. ** PSU                                  psu                                     rpsu                                    rpsu
+. ** pweight                              rfact                                   rfact                                   rfact
+. ** strata                               rstr                                    rstr                                    w_prov
+. ** ** Geographic information **
+. ** Region                               region                                  w_regn                                  w_regn
+. ** Urban/Rural                  urb                                     urb                                     urb
+. ** Province                     estrata_01                              restrata_01                     w_prov
+. **                                              Not part of sampling    Not part of sampling    Part of sampling
+. ** ** Income and expenditure indicators **
+. ** Total income                 toinc                                   toinc                                   toinc
+. ** Total food exp       t_food                                  food                                    food
+. ** Total non-food exp   t_nfood                                 nfood                                   nfood
+. ** Total exp                    t_totex                                 totex                                   totex
+. ** Per capita income    pcinc                                   pcinc                               pcinc       
+. ** Natl pc inc decile   natpc                                   pcinc_decile                    npcinc
+. ** Natl inc decile              natdc                                   toinc_decile                    ntoinc
+. ** Regl pc inc decile   regpc                                   reg_pcdecile                    rpcinc
+. ** Regl inc decile              regdc                                   *N/A*                                   rtoinc
+. ** Prov pc inc decile   *Not powered*                   *Not powered*                   ppcinc
+. ** Prov inc decile              *Not powered*                   *Not powered*                   ptoinc
+. ** Total alcohol                t_alcohol                               alcohol                                 alcohol
+. ** Total tobacco                t_tobacco                               tobacco                                 tobacco
+. ** Total health                 t_health                                health                                  health
+. ** ** Sociodemographic indicators **
+. ** Family size                  fsize                                   fsize                                   fsize
+. ** HH head sex                  sex                                     rc06_sex_01                     hs001001_sex
+. ** HH head age                  age                                     rc07_age_01                     hs001002_age
+. ** HH head marital              ms                                              rc08_mstat_01                   hs001003_ms
+. ** HH head educ                 hgc                                     rc09_grade01 /                  hs001004_hgc
+. **                                                                                              rc10_cursch_01
+. ** HH head job                  job                                     rc13_work_01 /                  hs001005_job
+. **                                                                                              rc14_job_01
+. 
+. ****** 2012 FIES
+. use "PUF\2012FIES.dta", clear
+
+. 
+. keep other_id w_regn urb rstr psu rfact fsize toinc t_food t_nfood t_totex ///
+>         pcinc natpc natdc regdc regpc ///
+>         t_alcohol t_tobacco t_health ///
+>         sex age ms hgc job ///
+>         estrata_01
+
+.         /// occup kb cw ///
+>         // hhtype members ageless5 age5_17 ///
+.         // employed_pay employed_prof ///
+.         // spouse_emp ///
+.         // bldg_type roof walls tenure hse_altertn ///
+.         // toilet electric water distance radio_qty tv_qty cd_qty ///
+.         // stereo_qty ref_qty wash_qty aircon_qty car_qty ///
+.         // landline_qty cellphone_qty pc_qty oven_qty ///
+.         // motor_banca_qty motorcycle_qty
+. ** Coding manual:
+. * For svyset declaration: psu = psu, pweight = rfact, strata = rstr
+. * w_regn: region
+. * urb: urban/rural
+. * toinc: total income
+. * t_food: total food expenditure (home + outside, does not include alcohol and tobacco)
+. *               sum of t_bread + t_meat + t_fish + t_milk + t_oil + t_fruit + t_veg + t_sugar +
+. *               t_food_nec + t_coffee + t_mineral + t_other_veg + t_food_outside
+. * t_nfood: total non-food expenditure
+. * t_totex: total expenditure (food + non-food)
+. * pcinc: Per capita income
+. * natpc: National per capita income decile
+. * natdc: National income decile
+. * regdc: Regional income decile
+. * regpc: Regional per capita income decile
+. * t_alcohol: total alcohol expenditure
+. * t_tobacco: total tobacco expenditure
+. * t_health: total health expenditure
+. * estrata_01: Province recode
+. 
+. save "01_Intermediate_Extracts\2012FIESextract.dta", replace
+file 01_Intermediate_Extracts\2012FIESextract.dta saved
+
+. 
+. 
+. ****** 2015 FIES
+. use "PUF\2015FIES.dta", clear
+
+. keep w_regn other_id urb rstr rpsu rfact fsize toinc food nfood totex ///
+>         pcinc pcinc_decile toinc_decile reg_pcdecile ///
+>         alcohol tobacco health ///
+>         rc06_sex_01 rc07_age_01 rc08_mstat_01 rc09_grade_01 rc10_cursch_01 rc13_work_01 rc14_job_01 ///
+>         restrata_01
+
+. ** Coding manual changes from 2012
+. * psu is now rpsu
+. * t_food is now food
+. * t_nfood is now nfood
+. * t_totex is now totex
+. * natpc is now pcinc_decile
+. * natdc is now toinc_decile
+. * regdc is not available
+. * regpc is now reg_pcdecile
+. * t_alcohol is now alcohol
+. * t_tobacco is now tobacco
+. * t_health is now health
+. * All the household head data is suffixed _01
+. * sex is now rc06_sex_01
+. * age is now rc07_age_01
+. * ms is now rc08_mstat_01
+. * hgc is now rc09_grade_01, keep rc10_cursch_01 as well for further recoding
+. * job is now a combination of rc13_work_01 rc14_job_01
+. * estrata_01 is now restrata_01
+. 
+. save "01_Intermediate_Extracts\2015FIESextract.dta", replace
+file 01_Intermediate_Extracts\2015FIESextract.dta saved
+
+. 
+. 
+. ****** 2018 FIES
+. use "PUF\2018FIES.dta", clear
+
+. keep w_regn sequence_no w_prov urb rpsu rfact fsize toinc food nfood totex ///
+>         pcinc ntoinc rtoinc ptoinc npcinc rpcinc ppcinc ///
+>         alcohol tobacco health ///
+>         hs001001_sex hs001002_age hs001003_ms hs001004_hgc hs001005_job
+
+. ** Coding manual changes from 2015
+. * There is a new w_prov variable since survey is powered at the province/HUC/ICC level
+. * Stratum variable: w_prov
+. * pcinc_decile is now npcinc
+. * toinc_decile is now ntoinc
+. * reg_pcdecile is now rpcinc
+. * Regional household decile is back as rtoinc
+. * New provincial/HUC/ICC deciles ptoinc ppcinc
+. * rc06_sex_01 is now hs001001_sex
+. * rc07_age_01 is now hs001002_age
+. * rc08_mstat_01 is now hs001003_ms
+. * rc09_grade_01/rc10_cursch01 is now hs001004_hgc
+. * rc13_work_01/rc14_job_01 is now hs001005_job
+. 
+. save "01_Intermediate_Extracts\2018FIESextract.dta", replace
+file 01_Intermediate_Extracts\2018FIESextract.dta saved
+
+. *************************************************************************************
+. 
+. 
+. 
+. 
+. *************************************************************************************
+. ******* PREARING VARIABLES FOR MERGING *******
+. *** Rename variables for consistency - use 2018 names
+. *** Handle missing values not coded as .
+. *** Drop all non-responses
+. *** Remap values of region of 2012/2015 to 2018
+. *** Make primary sampling units (PSUs) and strata unique across survey rounds
+. // Generate a survey round with the year as string
+. // Treat each PSU and strata separately
+. // Read https://userforum.dhsprogram.com/index.php?t=msg&goto=2225&S=Google for more info
+. // Essentially, each psu & strata across survey years must STAND ALONE, thus unique values must be assigned
+. // Generate a new variable that just appends a prefix of the survey year to make them unique
+. *** Adjust all costs for inflation - based on Consumer Price Index (CPI)
+. // Check: https://psa.gov.ph/price-indices/annual-cpi
+. // 2012 CPI = 100, 2015 CPI = 106.5, 2018 CPI = 115.4
+. // Formula for adjustment to 2018 prices: 2012: x115.4/100.0; 2015: x115.4/106.5
+. *** Denormalizing survey weights to pool sample
+. // Visit https://userforum.dhsprogram.com/index.php?t=msg&goto=82 for more info
+. // Also visit https://userforum.dhsprogram.com/index.php?t=msg&goto=2225&S=Google
+. // Refer to full technical report of the FIES for the values of the sampled households
+. // Refer to the 2003 Master Sample for total households in 2012 and 2015, 2013 Master Sample for 2018
+. // For 2012, sampled households = 40,171; sampling frame = 15,312,414
+. // For 2015, sampled households = 41,544; sampling frame = 15,312,414
+. // For 2018, sampled households = 147,717; sampling frame = 22,984,971
+. // Formula for denormalization = orig wgt * (# households in country / # households in sample)
+. 
+. 
+. ****** 2012 FIES
+. use "01_Intermediate_Extracts\2012FIESextract.dta", clear
+
+. 
+. *** Drop observations with blank PSUs to get final sample size
+. drop if psu == ""
+(2,226 observations deleted)
+
+. count
+  40,171
+
+. di "There are " `r(N)' " observations in this dataset"
+There are 40171 observations in this dataset
+
+. 
+. *** Recode region (map to 2018 values)
+. recode w_regn (1=1) (2=2) (3=3) (41=4) (5=5) (6=6) (7=7) (8=8) (9=9) (10=10) (11=11) (12=12) ///
+>         (13=13) (14=14) (15=15) (16=16) (42=17), generate(region)
+(5474 differences between w_regn and region)
+
+. drop w_regn
+
+. 
+. *** Generate survey round variable
+. gen survey = "2012"
+
+. 
+. *** Rename PSU
+. rename psu rpsu
+
+. 
+. *** Generate unique survey ID, PSU, and stratum
+. egen id = concat(survey other_id), punct(_)
+
+. egen psu = concat(survey rpsu), punct(_)
+
+. egen stratum = concat(survey rstr), punct(_)
+
+. 
+. *** Denormalize survey weights
+. gen weight = rfact * (15312414/40171)
+
+. 
+. *** Rename income and expenditure variables
+. rename t_alcohol alcohol
+
+. rename t_tobacco tobacco
+
+. rename t_food food
+
+. rename t_health health
+
+. rename t_nfood nfood
+
+. rename t_totex totex
+
+. 
+. *** Apply 2018 prices to income and expenditure variables
+. foreach var of varlist toinc alcohol tobacco food health nfood totex pcinc {
+  2.     gen `var'_2018 = `var' * 115.4/100
+  3. }
+
+. 
+. *** Rename decile variables
+. rename natpc npcinc
+
+. rename natdc ntoinc
+
+. rename regpc rpcinc
+
+. rename regdc rtoinc
+
+. 
+. *** Clean sociodemographic variables
+. replace ms = . if ms == 5  // Replace unknown values in marital status to missing
+(7 real changes made, 7 to missing)
+
+. replace ms = 4 if ms == 6  // Merge annulled to divorced/separated
+(8 real changes made)
+
+. gen educ = .                       // Generate education variable
+(40,171 missing values generated)
+
+. replace educ = 0 if hgc >= 0 & hgc <= 260               // No education / Some elem
+(9,753 real changes made)
+
+. replace educ = 1 if hgc >= 280 & hgc <= 330             // Elem grad / Some high school
+(12,445 real changes made)
+
+. replace educ = 2 if hgc >= 350 & hgc <= 900             // High school grad or higher
+(17,973 real changes made)
+
+. drop hgc
+
+. 
+. *** Extract province/HUC/ICC code
+. gen rprov_s = substr(estrata_01, 1, 4)
+
+. destring rprov_s, generate(w_prov)
+rprov_s: all characters numeric; w_prov generated as int
+
+. replace w_prov = round(w_prov/100)
+(40,171 real changes made)
+
+. drop estrata_01 rprov_s
+
+. 
+. save "01_Intermediate_Extracts\2012FIESextract_cleaned.dta", replace
+file 01_Intermediate_Extracts\2012FIESextract_cleaned.dta saved
+
+. 
+. 
+. ****** 2015 FIES
+. use "01_Intermediate_Extracts\2015FIESextract.dta", clear
+
+. *** Drop observations with blank PSUs to get final sample size
+. drop if rpsu == ""
+(2,714 observations deleted)
+
+. count
+  41,544
+
+. di "There are " `r(N)' " observations in this dataset"
+There are 41544 observations in this dataset
+
+. 
+. *** Recode region (map to 2018 values)
+. recode w_regn (1=1) (2=2) (3=3) (41=4) (5=5) (6=6) (7=7) (8=8) (9=9) (10=10) (11=11) (12=12) ///
+>         (13=13) (14=14) (15=15) (16=16) (42=17), generate(region)
+(5411 differences between w_regn and region)
+
+. drop w_regn
+
+. 
+. *** Generate survey round variable
+. gen survey = "2015"
+
+. 
+. *** Generate unique survey ID, PSU, and stratum
+. egen id = concat(survey other_id), punct(_)
+
+. egen psu = concat(survey rpsu), punct(_)
+
+. egen stratum = concat(survey rstr), punct(_)
+
+. 
+. *** Denormalize survey weights
+. gen weight = rfact * (15312414/41544)
+
+. 
+. *** Apply 2018 prices to income and expenditure variables
+. foreach var of varlist toinc alcohol tobacco food health nfood totex pcinc {
+  2.     gen `var'_2018 = `var' * 115.4/106.5
+  3. }
+
+. 
+. *** Rename decile variables
+. rename toinc_decile ntoinc
+
+. rename pcinc_decile npcinc
+
+. rename reg_pcdecile rpcinc
+
+. 
+. *** Replenish regional rtoinc variable
+. // Download and install egenmore package: ssc install egenmore
+. // For some reason, there is some level of misclassification of decile using Stata command (as seen in 2012 and 2018 data), but there is no other method more accurate to regenerate regional household deci
+> les
+. egen rtoinc = xtile(toinc), n(10) by(region)
+
+. 
+. *** Clean sociodemographic variables
+. rename rc06_sex_01 sex
+
+. rename rc07_age_01 age
+
+. rename rc08_mstat_01 ms
+
+. replace ms = . if ms == 5  // Replace unknown values in marital status to missing
+(11 real changes made, 11 to missing)
+
+. replace ms = 4 if ms == 6  // Merge annulled to divorced/separated
+(1 real change made)
+
+. gen educ = .                       // Generate education variable
+(41,544 missing values generated)
+
+. replace educ = 0 if rc09_grade_01 >= 0 & rc09_grade_01 <= 260           // No education / Some elem
+(10,064 real changes made)
+
+. replace educ = 1 if rc09_grade_01 >= 280 & rc09_grade_01 <= 330         // Elem grad / Some high school
+(12,535 real changes made)
+
+. replace educ = 2 if rc09_grade_01 >= 350 & rc09_grade_01 <= 900         // High school grad or higher
+(18,945 real changes made)
+
+. replace educ = 2 if educ == . & rc10_cursch_01 == 1     
+(0 real changes made)
+
+.                 // Classify all household heads currently in school as having at least high school education
+. drop rc09_grade_01 rc10_cursch_01
+
+. gen job = .                                // Generate job indicator
+(41,544 missing values generated)
+
+. replace job = 1 if rc13_work_01 == 1                    // Yes
+(32,961 real changes made)
+
+. replace job = 1 if job == . & rc14_job_01 == 1  // Yes
+(206 real changes made)
+
+. replace job = 2 if job == . & rc14_job_01 == 2  // No
+(8,377 real changes made)
+
+. drop rc13_work_01 rc14_job_01
+
+. 
+. *** Extract province/HUC/ICC code
+. gen rprov_s = substr(restrata_01, 1, 4)
+
+. destring rprov_s, generate(w_prov)
+rprov_s: all characters numeric; w_prov generated as int
+
+. replace w_prov = round(w_prov/100)
+(41,544 real changes made)
+
+. drop restrata_01 rprov_s
+
+. 
+. save "01_Intermediate_Extracts\2015FIESextract_cleaned.dta", replace
+file 01_Intermediate_Extracts\2015FIESextract_cleaned.dta saved
+
+. 
+. 
+. ****** 2018 FIES
+. use "01_Intermediate_Extracts\2018FIESextract.dta", clear
+
+. 
+. *** Drop observations with blank PSUs to get final sample size
+. drop if rpsu == .
+(0 observations deleted)
+
+. count
+  147,717
+
+. di "There are " `r(N)' " observations in this dataset"
+There are 147717 observations in this dataset
+
+. 
+. *** Rename region variable
+. rename w_regn region
+
+. 
+. *** Generate survey round variable
+. gen survey = "2018"
+
+. 
+. *** Generate unique survey ID, PSU, and stratum
+. rename sequence_no other_id
+
+. tostring other_id, replace
+other_id was long now str6
+
+. egen id = concat(survey other_id), punct(_)
+
+. gen rstr = w_prov               // Remember this is also the province/HUC/ICC level estimate
+
+. tostring(rstr), replace
+rstr was float now str2
+
+. tostring(rpsu), replace
+rpsu was long now str4
+
+. egen psu = concat(survey rpsu), punct(_)
+
+. egen stratum = concat(survey rstr), punct(_)
+
+. 
+. *** Denormalize survey weights
+. gen weight = rfact * (22984971/147717)
+
+. 
+. *** Rename income and expenditure categories
+. foreach var of varlist toinc alcohol tobacco food health nfood totex pcinc {
+  2.     gen `var'_2018 = `var'
+  3. }
+
+. 
+. *** Clean sociodemographic variables
+. rename hs001001_sex sex
+
+. rename hs001002_age age
+
+. rename hs001003_ms ms
+
+. replace ms = . if ms == 5  // Replace unknown values in marital status to missing
+(30 real changes made, 30 to missing)
+
+. replace ms = 4 if ms == 6  // Merge annulled to divorced/separated
+(36 real changes made)
+
+. gen educ = .                       // Generate education variable
+(147,717 missing values generated)
+
+. replace educ = 0 if hs001004_hgc >= 0 & hs001004_hgc <= 10010                           // No education / Some elem
+(31,855 real changes made)
+
+. replace educ = 1 if hs001004_hgc >= 10020 & hs001004_hgc <= 24010               // Elem grad / Some high school
+(42,512 real changes made)
+
+. replace educ = 2 if hs001004_hgc >= 24020 & hs001004_hgc <= 81041               // High school grad or higher
+(73,350 real changes made)
+
+. drop hs001004_hgc
+
+. rename hs001005_job job
+
+. 
+. save "01_Intermediate_Extracts\2018FIESextract_cleaned.dta", replace
+file 01_Intermediate_Extracts\2018FIESextract_cleaned.dta saved
+
+. *************************************************************************************
+. 
+. 
+. 
+. 
+. *************************************************************************************
+. ******* MERGE DATASET, FINALIZE VARIABLE AND LABEL NAMES *******
+. ****** Merge dataset
+. append using "01_Intermediate_Extracts\2015FIESextract_cleaned.dta"
+(variable other_id was str6, now str18 to accommodate using data's values)
+(variable rstr was str2, now str5 to accommodate using data's values)
+(variable rpsu was str4, now str6 to accommodate using data's values)
+(variable id was str12, now str24 to accommodate using data's values)
+(variable psu was str10, now str12 to accommodate using data's values)
+(variable stratum was str8, now str11 to accommodate using data's values)
+(variable rtoinc was byte, now float to accommodate using data's values)
+(variable job was byte, now float to accommodate using data's values)
+(variable w_prov was byte, now int to accommodate using data's values)
+
+. append using "01_Intermediate_Extracts\2012FIESextract_cleaned.dta"
+
+. 
+. 
+. ****** Cleaning data labels (use codebook command to check value labels)
+. // Survey round
+. encode survey, generate(round) label(survey)
+
+. drop survey
+
+. rename round survey
+
+. 
+. // Urban/rural
+. recode urb (1=1) (2=0)
+(132656 changes made to urb)
+
+. label define urb 0 "Rural" 1 "Urban"
+
+. label values urb urb
+
+. 
+. // Education
+. label define educ 0 "No educ/some elem" 1 "Elem grad/some HS" 2 "HS grad or higher"
+
+. label values educ educ
+
+. 
+. // Marital Status
+. label define ms 1 "Single" 2 "Married" 3 "Widowed" 4 "Divorced/Separated/Unknown"
+
+. label values ms ms
+
+. 
+. // Job
+. recode job (1=1) (2=0)
+(47483 changes made to job)
+
+. label define job 0 "No job" 1 "Has job"
+
+. label values job job
+
+. 
+. // Age: 95 onwards will be maxed out at 95
+. replace age = 95 if age > 95 & age <= 99
+(118 real changes made)
+
+. 
+. // Rename province
+. rename w_prov province
+
+. 
+. ******* The following code is deprecated - the province codes are now clean for 2018, will remain blank for 2012 and 2015 since survey was not powered for these provinces
+. *** Clean province categories - deprecated code
+. // Follow categorization of PSA for generation of province-level poverty thresholds
+. // ssc install elabel
+. // label define rprov_2 1724 "Naga City" 3135 "City of Santiago" 3617 "Marawi?" 3738 "Ormoc City" 7606 "Unknown NCR District City"
+. // labvalcombine RPROV rprov_2, lblname(newprov)
+. // label values rprov newprov
+. // 3617 under Lanao del Sur (likely Marawi), 7606 likely a 4th district NCR city (point estimate correct but CV cannot be recreated exactly)
+. // Code for investigating - compare to officially reported estimates
+. // gen poor = . // or replace poor = . if doing after the first time
+. // replace poor = 1 if rprov & survey & pcinc = 1 & urb (do similar for urb = 0 and repeat steps for poor = 0)
+. // svy: mean poor
+. 
+. *** Generate PSA province variable - deprecated code
+. // gen province = floor(rprov/100)*100 if rprov < 9804
+. // replace province = 9804 if rprov == 9804
+. // Relabel province names               - run label list newprov to check names
+. // label define rprov_3 200 "Agusan del Norte" 300 "Agusan del Sur" 1100 "Benguet" ///
+. //      1600 "Camarines Norte" 1700 "Camarines Sur" 2200 "Cebu" 2300 "Davao del Norte" ///
+. //      2400 "Davao del Sur" 2600 "Eastern Samar" 3000 "Iloilo" 3100 "Isabela" ///
+. //      3500 "Lanao del Norte" 3600 "Lanao del Sur" 3700 "Leyte" ///
+. //      3900 "NCR District 1" 4200 "Misamis Occidental" 4300 "Misamis Oriental" ///
+. //      4500 "Negros Occidental" 4700 "North Cotabato" ///
+. //      4800 "Northern Samar" 5100 "Occidental Mindoro" 5200 "Oriental Mindoro" ///
+. //      5300 "Palawan" 5400 "Pampanga" 5600 "Quezon" 6000 "Western Samar" 6300 "South Cotabato" ///
+. //      6400 "Southern Leyte" 6700 "Surigao del Norte" 6800 "Surigao del Sur" ///
+. //      7100 "Zambales" 7200 "Zamboanga del Norte" 7300 "Zamboanga del Sur" ///
+. //      7400 "NCR District 2" 7500 "NCR District 3" 7600 "NCR District 4" ///
+. //      8200 "Compostela Valley" 8300 "Zamboanga Sibugay"
+. // Note that both Dinagat Islands became a province in 2006, Davao Occidental in 2013, so neither were included in the 2003 Master Sample that constituted the 2012 and 2015 FIES. They are only available i
+> n the 2018 FIES.
+. // Dinagat Island poverty incidence was calculated for 2015 in the 2018 update but the PSUs cannot be identified from Surigao del Norte, therefore retain poverty comparison to poverty line of Surigao del 
+> Norte
+. // labvalcombine newprov rprov_3, lblname(province)
+. // label values province province
+. 
+. 
+. ****** Order variables
+. order id other_id survey region province psu rpsu stratum rstr weight rfact ///
+>         toinc pcinc ntoinc rtoinc ptoinc npcinc rpcinc ppcinc ///
+>         totex food nfood alcohol tobacco health ///
+>         toinc_2018 pcinc_2018 totex_2018 food_2018 nfood_2018 alcohol_2018 tobacco_2018 health_2018 ///
+>         urb fsize sex age ms educ job
+
+. 
+. 
+. ****** Final variable labels
+. label variable id "ID by survey round"
+
+. label variable other_id "Original ID"
+
+. label variable survey "Survey round"
+
+. label variable province "Province/HUC/ICC"
+
+. label variable psu "PSU by survey round"
+
+. label variable rpsu "Original PSU"
+
+. label variable stratum "Stratum by survey round"
+
+. label variable rstr "Original stratum"
+
+. label variable weight "Weight (Denormalized by survey round)"
+
+. label variable rfact "Original weight"
+
+. label variable toinc "Total income (Nominal)"
+
+. label variable pcinc "Per capita income (Nominal)"
+
+. label variable ntoinc "National total income decile"
+
+. label variable rtoinc "Regional total income decile"
+
+. label variable ptoinc "Province/HUC/ICC total income decile (2018 only)"
+
+. label variable npcinc "National per capita income decile"
+
+. label variable rpcinc "Regional per capita income decile"
+
+. label variable ppcinc "Province/HUC/ICC per capita income decile (2018 only)"
+
+. label variable totex "Total expenditure (Nominal)"
+
+. label variable food "Total food expenditure (Nominal)"
+
+. label variable nfood "Total non-food expenditure (Nominal)"
+
+. label variable alcohol "Total alcohol expenditure (Nominal)"
+
+. label variable tobacco "Total tobacco expenditure (Nominal)"
+
+. label variable health "Total health expenditure (Nominal)"
+
+. label variable toinc_2018 "Total income (2018 prices)"
+
+. label variable pcinc_2018 "Per capita income (2018 prices)"
+
+. label variable totex_2018 "Total expenditure (2018 prices)"
+
+. label variable food_2018 "Total food expenditure (2018 prices)"
+
+. label variable nfood_2018 "Total non-food expenditure (2018 prices)"
+
+. label variable alcohol_2018 "Total alcohol expenditure (2018 prices)"
+
+. label variable tobacco_2018 "Total tobacco expenditure (2018 prices)"
+
+. label variable health_2018 "Total health expenditure (2018 prices)"
+
+. label variable sex "Sex of household head"
+
+. label variable age "Age of household head"
+
+. label variable ms "Marital status of household head"
+
+. label variable educ "Highest educational attainment of household head"
+
+. label variable job "Job status of household head"
+
+. 
+. save "01_Intermediate_Extracts\fies2012to2018.dta", replace
+file 01_Intermediate_Extracts\fies2012to2018.dta saved
+
+. *************************************************************************************
+. 
+. 
+. 
+. 
+. *************************************************************************************
+. ******* SVYSET DECLARATIONS **********
+. ** Estimation methods validated by checking the mean, standard error, and 95% CI of technical report prior to merging
+. svyset psu [pweight = weight], strata(stratum) singleunit(centered)
+
+Sampling weights: weight
+             VCE: linearized
+     Single unit: centered
+        Strata 1: stratum
+ Sampling unit 1: psu
+           FPC 1: <zero>
+
+. svy: mean toinc, over(survey)
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832       Number of obs   =        229,432
+Number of PSUs   = 17,077       Population size = 20,395,818,012
+                                Design df       =         16,245
+
+----------------------------------------------------------------
+               |             Linearized
+               |       Mean   std. err.     [95% conf. interval]
+---------------+------------------------------------------------
+c.toinc@survey |
+         2012  |   234614.9   3234.818      228274.3    240955.5
+         2015  |   266962.3   2825.795      261423.4    272501.2
+         2018  |   313348.3   2181.579      309072.2    317624.5
+----------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+
+. svy: mean totex, over(survey)
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832       Number of obs   =        229,432
+Number of PSUs   = 17,077       Population size = 20,395,818,012
+                                Design df       =         16,245
+
+----------------------------------------------------------------
+               |             Linearized
+               |       Mean   std. err.     [95% conf. interval]
+---------------+------------------------------------------------
+c.totex@survey |
+         2012  |     192540   2313.621      188005.1      197075
+         2015  |   214816.2   2123.773      210653.4      218979
+         2018  |   238640.9   1456.541      235785.9    241495.9
+----------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+
+. *************************************************************************************
+. 
+. 
+. 
+. *************************************************************************************
+. ******* GENERATE VARIABLES FOR ANALYSIS **********
+. label define noyes 0 No 1 Yes
+
+. 
+. 
+. ****** Tobacco, Alcohol, Health OOP
+. local expense_type tobacco alcohol health
+
+. local expense_title " "Tobacco" "Alcohol" "Health OOP" "
+
+. 
+. forvalues i = 1/3 {
+  2.         local expense_type_name: word `i' of `expense_type'
+  3.         local expense_title_name: word `i' of `expense_title'
+  4.         // Household-level prevalence of expenditure
+.         gen prev_`expense_type_name' = `expense_type_name' > 0
+  5.         label variable prev_`expense_type_name' "`expense_title_name' in household"
+  6.         label values prev_`expense_type_name' noyes
+  7.         // Share of consumption
+.         gen share_`expense_type_name'_totex = `expense_type_name' / totex
+  8.         label variable share_`expense_type_name'_totex "`expense_title_name' - expenditure share"
+  9.         gen share_`expense_type_name'_toinc = `expense_type_name' / toinc
+ 10.         label variable share_`expense_type_name'_toinc "`expense_title_name' - income share"
+ 11.         gen share_`expense_type_name'_nfood = `expense_type_name' / nfood
+ 12.         label variable share_`expense_type_name'_nfood "`expense_title_name' - nonfood share"
+ 13.         // Absolute consumption already available
+.         // Data quality checks
+.         svy: mean prev_`expense_type_name', over(survey)
+ 14.         // graph box share_`expense_type_name'_totex [pweight = weight], over(survey)
+. }
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832              Number of obs   =        229,432
+Number of PSUs   = 17,077              Population size = 20,395,818,012
+                                       Design df       =         16,245
+
+-----------------------------------------------------------------------
+                      |             Linearized
+                      |       Mean   std. err.     [95% conf. interval]
+----------------------+------------------------------------------------
+c.prev_tobacco@survey |
+                2012  |   .5575614   .0036705      .5503668    .5647559
+                2015  |   .5282854   .0034868      .5214508      .53512
+                2018  |   .4971814   .0023886      .4924995    .5018633
+-----------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832              Number of obs   =        229,432
+Number of PSUs   = 17,077              Population size = 20,395,818,012
+                                       Design df       =         16,245
+
+-----------------------------------------------------------------------
+                      |             Linearized
+                      |       Mean   std. err.     [95% conf. interval]
+----------------------+------------------------------------------------
+c.prev_alcohol@survey |
+                2012  |   .6356387   .0040315      .6277365    .6435409
+                2015  |    .599459    .004191      .5912442    .6076738
+                2018  |   .6250375   .0025772      .6199859    .6300891
+-----------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832             Number of obs   =        229,432
+Number of PSUs   = 17,077             Population size = 20,395,818,012
+                                      Design df       =         16,245
+
+----------------------------------------------------------------------
+                     |             Linearized
+                     |       Mean   std. err.     [95% conf. interval]
+---------------------+------------------------------------------------
+c.prev_health@survey |
+               2012  |   .9508442   .0020272      .9468707    .9548177
+               2015  |   .9651481   .0019759      .9612752     .969021
+               2018  |   .9623451   .0010498      .9602875    .9644028
+----------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+
+. 
+. 
+. *** Data quality check: Make sure sum of tobacco, alcohol, and health share do not exceed 100%, investigate if needed
+. gen temp_share = share_tobacco_totex + share_alcohol_totex + share_health_totex
+
+. // graph box temp_share [pweight = weight], over(survey)
+. drop temp_share
+
+. gen temp_share = share_tobacco_nfood + share_alcohol_nfood + share_health_nfood
+
+. // graph box temp_share [pweight = weight], over(survey)
+. drop temp_share
+
+. // graph matrix share_tobacco_totex share_alcohol_totex share_health_totex [pweight = weight], by(survey) msize(vtiny)
+. // No anomalies detected
+. // Optional graph command
+. // graph bar (mean) prev_tobacco, over(survey) by(region)
+. 
+. 
+. ****** Generate poverty thresholds (https://psa.gov.ph/poverty-press-releases/data)
+. // The Philippine Statistics Authority (PSA) has published comparable nominal estimates of 2012 and 2015, and 2015 and 2018, but not across all three years. 
+. // This means that the values of 2015 differ between 2012 and 2015, and 2015 and 2018, but not by much.
+. // To check for potential misclassification, generate both thresholds for 2015 and conduct sensitivity analysis later on to check for any discrepancies in the results
+. // 2012 vs 2015: https://psa.gov.ph/content/poverty-incidence-among-filipinos-registered-216-2015-psa, download Table 16
+. // 2015 vs 2018: https://psa.gov.ph/content/updated-2015-and-2018-full-year-official-poverty-statistics, download Table 10
+. // Generate an export of variable names and labels using putexcel command as workaround
+. // putexcel set "04_Poverty_Thresholds\names", replace
+. // svy: tab province, stubw(50)
+. // matrix prov = e(Row)'
+. // putexcel A1 = matrix(prov), rownames
+. // putexcel save
+. // Manually copy the thresholds and save in a csv file, make sure psgc is saved as string to retain leading zero
+. // import delimited "province_povthresholds.csv", stringcols(3) 
+. // save "province_povthresholds.dta", replace
+. 
+. 
+. *** Merge poverty thresholds
+. merge m:1 province using "04_Poverty_Thresholds\province_povthresholds.dta",
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                             0
+    Matched                           229,432  (_merge==3)
+    -----------------------------------------
+
+. drop prov_name _merge
+
+. // Label newly imported variables
+. label variable psgc "PSGC code (6 digits)"
+
+. label variable pt_urb_2012 "Urban Poverty Threshold 2012"
+
+. label variable pt_urb_2015_old "Urban Poverty Threshold 2015 (Old)"
+
+. label variable pt_rur_2012 "Rural Poverty Threshold 2012"
+
+. label variable pt_rur_2015_old "Rural Poverty Threshold 2015 (Old)"
+
+. label variable pt_urb_2015_new "Urban Poverty Threshold 2015 (New)"
+
+. label variable pt_urb_2018 "Urban Poverty Threshold 2018"
+
+. label variable pt_rur_2015_new "Rural Poverty Threshold 2015 (New)"
+
+. label variable pt_rur_2018 "Rural Poverty Threshold 2018"
+
+. 
+. *** Generate poverty status
+. // Using old 2015 threshold
+. gen poor_old2015 = .
+(229,432 missing values generated)
+
+. label variable poor_old2015 "Poverty status (old 2015 threshold)"
+
+. // Using new 2015 threshold
+. gen poor_new2015 = .
+(229,432 missing values generated)
+
+. label variable poor_new2015 "Poverty status (new 2015 threshold)"
+
+. // Replace values - store locals then nested and parallel loops
+. local oldnew old new
+
+. local povvars poor_old2015 poor_new2015
+
+. local urbrur rur urb
+
+. forvalues i = 1/2 {
+  2.         local oldnew_name: word `i' of `oldnew'
+  3.         local povvars_name: word `i' of `povvars'
+  4.         forvalues j = 1/2 {
+  5.                 local urbrur_name: word `j' of `urbrur'
+  6.                 replace `povvars_name' = 1 if urb == `j' - 1 & survey == 1 & pcinc <= pt_`urbrur_name'_2012
+  7.                 replace `povvars_name' = 0 if urb == `j' - 1 & survey == 1 & pcinc > pt_`urbrur_name'_2012
+  8.                 replace `povvars_name' = 1 if urb == `j' - 1 & survey == 2 & pcinc <= pt_`urbrur_name'_2015_`oldnew_name'
+  9.                 replace `povvars_name' = 0 if urb == `j' - 1 & survey == 2 & pcinc > pt_`urbrur_name'_2015_`oldnew_name'
+ 10.                 replace `povvars_name' = 1 if urb == `j' - 1 & survey == 3 & pcinc <= pt_`urbrur_name'_2018
+ 11.                 replace `povvars_name' = 0 if urb == `j' - 1 & survey == 3 & pcinc > pt_`urbrur_name'_2018
+ 12.                 label values `povvars_name' noyes
+ 13.         }
+ 14. }
+(7,379 real changes made)
+(17,419 real changes made)
+(6,709 real changes made)
+(19,569 real changes made)
+(16,464 real changes made)
+(65,116 real changes made)
+(1,619 real changes made)
+(13,754 real changes made)
+(1,372 real changes made)
+(13,894 real changes made)
+(5,179 real changes made)
+(60,958 real changes made)
+(7,379 real changes made)
+(17,419 real changes made)
+(7,349 real changes made)
+(18,929 real changes made)
+(16,464 real changes made)
+(65,116 real changes made)
+(1,619 real changes made)
+(13,754 real changes made)
+(1,483 real changes made)
+(13,783 real changes made)
+(5,179 real changes made)
+(60,958 real changes made)
+
+. 
+. 
+. *** Check proportions of per capita poverty at the province level vs official report
+. // Some minor discrepancies in a few provinces, but overall the matching of PSU to province held pretty well
+. svy, subpop(if survey == 1): mean poor_old2015, over(province) level(90)
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =   371                   Number of obs   =        40,171
+Number of PSUs   = 3,162                   Population size = 8,167,079,632
+                                           Subpop. no. obs =        40,171
+                                           Subpop. size    = 8,167,079,632
+                                           Design df       =         2,791
+
+--------------------------------------------------------------------------
+                         |             Linearized
+                         |       Mean   std. err.     [90% conf. interval]
+-------------------------+------------------------------------------------
+ c.poor_old2015@province |
+                   Abra  |   .2719365   .0510641      .1879157    .3559573
+Agusan del Norte ((((((  |   .2767785   .0373806      .2152724    .3382846
+         Agusan del Sur  |   .3729577   .0445295      .2996888    .4462265
+                  Aklan  |   .2044606   .0549683      .1140158    .2949053
+                  Albay  |   .3391062   .0343844      .2825301    .3956823
+                Antique  |    .235611   .0545181      .1459069    .3253151
+                Basilan  |   .3211191   .0726772      .2015361    .4407021
+                 Bataan  |   .0446542   .0152955      .0194871    .0698214
+                Batanes  |   .1818182   2.78e-17      .1818182    .1818182
+               Batangas  |   .1474136   .0224487      .1104765    .1843506
+                Benguet  |   .0280084   .0074978      .0156715    .0403454
+                  Bohol  |   .3057509   .0306107      .2553841    .3561176
+               Bukidnon  |   .4148774   .0379802      .3523847    .4773701
+                Bulacan  |   .0535976   .0091781       .038496    .0686992
+                Cagayan  |   .1515935    .020906      .1171947    .1859923
+        Camarines Norte  |   .2170643    .041637      .1485548    .2855738
+          Camarines Sur  |   .3172596   .0309423      .2663471    .3681722
+               Camiguin  |   .4104105   .0251905       .368962    .4518589
+                  Capiz  |   .2231767   .0487357       .142987    .3033665
+            Catanduanes  |   .2708495   .0670697       .160493     .381206
+                 Cavite  |   .0255369   .0078201      .0126697    .0384041
+                   Cebu  |   .1887339   .0168556      .1609998    .2164681
+                  Davao  |    .267289   .0434637      .1957738    .3388041
+           Davao de Sur  |   .1995817   .0235374      .1608533      .23831
+         Davao Oriental  |   .3775709   .0458483      .3021321    .4530096
+          Eastern Samar  |   .5542831   .0557355      .4625759    .6459903
+                 Ifugao  |   .3603031   .0650362      .2532925    .4673136
+           Ilocos Norte  |    .083793   .0207745      .0496106    .1179754
+             Ilocos Sur  |    .137304   .0430628      .0664484    .2081596
+                 Iloilo  |   .2083429   .0246751      .1677426    .2489433
+                Isabela  |   .1904398   .0177419      .1612474    .2196323
+                Kalinga  |   .2086172   .0631606      .1046928    .3125417
+               La Union  |   .1533975   .0291997      .1053523    .2014426
+                 Laguna  |   .0462429   .0090559      .0313424    .0611435
+        Lanao del Norte  |   .4143466   .0536433      .3260819    .5026113
+          Lanao del Sur  |   .6730544   .0463416      .5968039    .7493049
+                  Leyte  |   .3140853   .0251739      .2726641    .3555065
+            Maguindanao  |   .5451403   .0421911      .4757191    .6145615
+                 Manila  |   .0359479   .0076526      .0233563    .0485395
+             Marinduque  |   .2385761   .0450607      .1644332    .3127189
+                Masbate  |    .405685   .0365603      .3455287    .4658413
+     Misamis Occidental  |   .3377107   .0411081      .2700715    .4053499
+       Misamis Oriental  |   .1908518   .0295041      .1423058    .2393978
+      Mountain Province  |   .2794769    .069103      .1657748     .393179
+      Negros Occidental  |   .2490811   .0235688      .2103009    .2878612
+        Negros Oriental  |   .4394717   .0461283      .3635723    .5153712
+               Cotabato  |   .4483559   .0409633      .3809549    .5157569
+         Northern Samar  |    .434986   .0470763      .3575266    .5124453
+            Nueva Ecija  |   .1964032   .0226543      .1591278    .2336786
+          Nueva Vizcaya  |    .150795   .0632204      .0467721    .2548178
+     Occidental Mindoro  |   .2977628   .0573297      .2034325    .3920931
+       Oriental Mindoro  |   .2153085   .0364683      .1553035    .2753134
+                Palawan  |   .2047371   .0372316      .1434763    .2659979
+               Pampanga  |   .0544347   .0127324      .0334849    .0753846
+             Pangasinan  |   .1487597   .0143597      .1251323    .1723871
+                 Quezon  |   .2031569    .023246       .164908    .2414058
+                Quirino  |   .1546661   .0370561      .0936939    .2156383
+                  Rizal  |   .0503628   .0123069      .0301131    .0706125
+                Romblon  |   .3036073   .0440034      .2312041    .3760106
+        Samar (Western)  |   .4349463   .0494726      .3535442    .5163484
+               Siquijor  |   .2402308   .0942613      .0851332    .3953284
+               Sorsogon  |   .3129167   .0459645      .2372868    .3885467
+         South Cotabato  |   .2576226   .0329928      .2033362    .3119089
+         Southern Leyte  |   .3404328   .0609464      .2401516    .4407139
+         Sultan Kudarat  |   .4037798   .0547525      .3136901    .4938694
+                   Sulu  |   .4017729   .0424883      .3318626    .4716831
+      Surigao del Norte  |   .3383435   .0262383       .295171     .381516
+        Surigao del Sur  |   .2829407   .0287298      .2356686    .3302127
+                 Tarlac  |   .1354197    .018902      .1043183    .1665211
+              Tawi-tawi  |   .2194188   .0516982      .1343545    .3044831
+               Zambales  |   .1206655     .02943      .0722414    .1690895
+    Zamboanga del Norte  |   .4796748   .0411843      .4119102    .5474394
+      Zamboanga del Sur  |   .2586444   .0285343       .211694    .3055949
+          NCR-2nd Dist.  |   .0188449    .003489      .0131042    .0245857
+          NCR-3rd Dist.  |   .0276092   .0056008      .0183937    .0368247
+          NCR-4th Dist.  |   .0299173   .0053845      .0210577     .038777
+                 Aurora  |   .2713254   .0815999      .1370609    .4055899
+                Biliran  |   .2088654   .0338777       .153123    .2646077
+               Guimaras  |   .1694163   .0526204      .0828346    .2559979
+              Sarangani  |    .460157   .0345496      .4033091    .5170049
+                 Apayao  |   .5469357   .0857005      .4059241    .6879472
+      Compostela Valley  |   .3066043   .0556739      .2149985    .3982101
+      Zamboanga Sibugay  |   .3701923   .0443826      .2971652    .4432195
+           Isabela City  |   .1547324   .0177439      .1255366    .1839282
+          Cotabato City  |   .3452713   .0695654      .2308084    .4597342
+--------------------------------------------------------------------------
+Note: 461 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+
+. svy, subpop(if survey == 2): mean poor_old2015, over(province) level(90)
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =   374                   Number of obs   =        41,544
+Number of PSUs   = 3,145                   Population size = 8,378,043,640
+                                           Subpop. no. obs =        41,544
+                                           Subpop. size    = 8,378,043,640
+                                           Design df       =         2,771
+
+--------------------------------------------------------------------------
+                         |             Linearized
+                         |       Mean   std. err.     [90% conf. interval]
+-------------------------+------------------------------------------------
+ c.poor_old2015@province |
+                   Abra  |   .1989664   .0294353      .1505334    .2473994
+Agusan del Norte ((((((  |   .2806395   .0395579      .2155508    .3457282
+         Agusan del Sur  |   .3700969   .0378195      .3078686    .4323253
+                  Aklan  |   .1094365   .0352334      .0514633    .1674097
+                  Albay  |   .1764375   .0226822      .1391161    .2137588
+                Antique  |   .1840091   .0558713      .0920782      .27594
+                Basilan  |   .2831968   .0570959      .1892511    .3771426
+                 Bataan  |    .016266   .0122882      -.003953     .036485
+                Batanes  |          0  (omitted)
+               Batangas  |   .0682132   .0130502      .0467403    .0896861
+                Benguet  |   .0248741   .0058636      .0152261    .0345221
+                  Bohol  |   .2170226    .031775      .1647398    .2693053
+               Bukidnon  |   .4696105   .0311039       .418432     .520789
+                Bulacan  |   .0326638   .0064145      .0221093    .0432184
+                Cagayan  |   .1325001   .0184331      .1021703    .1628299
+        Camarines Norte  |   .2932202   .0493905      .2119528    .3744876
+          Camarines Sur  |   .2709895    .026779      .2269272    .3150518
+               Camiguin  |   .2993464   .0888683      .1531221    .4455707
+                  Capiz  |   .0778607   .0328892      .0237447    .1319768
+            Catanduanes  |   .3361057   .0413601      .2680515    .4041598
+                 Cavite  |   .0447573   .0091864      .0296419    .0598727
+                   Cebu  |   .1786355   .0151244      .1537498    .2035213
+                  Davao  |   .2610857   .0363832      .2012206    .3209508
+           Davao de Sur  |   .1195946   .0166469      .0922038    .1469855
+         Davao Oriental  |   .2130272   .0344024      .1564213     .269633
+          Eastern Samar  |   .3744473   .0728258      .2546195    .4942751
+                 Ifugao  |    .261281   .0656934      .1531889    .3693732
+           Ilocos Norte  |   .0329674   .0106011      .0155243    .0504105
+             Ilocos Sur  |   .0950407   .0225515      .0579343     .132147
+                 Iloilo  |   .1492429   .0189897      .1179971    .1804886
+                Isabela  |   .1057114   .0125639      .0850387    .1263841
+                Kalinga  |   .2998355   .0588472      .2030081    .3966629
+               La Union  |    .091544   .0232704      .0532548    .1298333
+                 Laguna  |   .0412623   .0111746      .0228756    .0596491
+        Lanao del Norte  |   .3630082   .0515103       .278253    .4477634
+          Lanao del Sur  |   .6631897   .0455923      .5881719    .7382075
+                  Leyte  |    .236339    .023032      .1984421     .274236
+            Maguindanao  |   .4884952   .0396784      .4232082    .5537823
+                 Manila  |   .0346665   .0090899        .01971     .049623
+             Marinduque  |   .1174742   .0319168      .0649582    .1699902
+                Masbate  |   .3552828   .0391519       .290862    .4197035
+     Misamis Occidental  |   .3013235   .0361962      .2417661    .3608809
+       Misamis Oriental  |   .1488044   .0230982      .1107985    .1868103
+      Mountain Province  |   .2953028    .052816      .2083992    .3822063
+      Negros Occidental  |   .2189199   .0236032      .1800831    .2577567
+        Negros Oriental  |    .386705   .0397159      .3213564    .4520537
+               Cotabato  |   .3447684   .0333879      .2898317     .399705
+         Northern Samar  |    .479186   .0601522      .3802113    .5781606
+            Nueva Ecija  |   .1857379   .0221105      .1493573    .2221186
+          Nueva Vizcaya  |   .0914543   .0230282      .0535637    .1293449
+     Occidental Mindoro  |   .3000764   .0671302      .1896201    .4105326
+       Oriental Mindoro  |   .1496349   .0311501      .0983804    .2008895
+                Palawan  |   .1193067     .02655      .0756212    .1629922
+               Pampanga  |   .0299751   .0069783       .018493    .0414571
+             Pangasinan  |   .1122199   .0153324      .0869919    .1374478
+                 Quezon  |   .1711421   .0246423      .1305955    .2116887
+                Quirino  |   .1872484   .0504827      .1041839    .2703128
+                  Rizal  |    .035575   .0076443      .0229971     .048153
+                Romblon  |   .2808596   .0491852      .1999301    .3617892
+        Samar (Western)  |   .3952417   .0589977      .2981668    .4923167
+               Siquijor  |   .4887125   .0614946      .3875291    .5898959
+               Sorsogon  |   .3165448   .0421646       .247167    .3859226
+         South Cotabato  |   .1979736   .0242409      .1580875    .2378598
+         Southern Leyte  |   .3023762   .0481732      .2231118    .3816406
+         Sultan Kudarat  |   .3916697   .0766965      .2654729    .5178665
+                   Sulu  |   .4956612   .0516483      .4106788    .5806435
+      Surigao del Norte  |   .2670769    .028157      .2207473    .3134066
+        Surigao del Sur  |   .3196107   .0329785      .2653478    .3738736
+                 Tarlac  |   .1469742   .0182093      .1170126    .1769359
+              Tawi-tawi  |   .1063917   .0417746      .0376556    .1751278
+               Zambales  |   .1228825   .0232767      .0845829    .1611821
+    Zamboanga del Norte  |   .4107179   .0381598      .3479296    .4735062
+      Zamboanga del Sur  |    .185642   .0229099       .147946     .223338
+          NCR-2nd Dist.  |   .0191234   .0039743      .0125841    .0256628
+          NCR-3rd Dist.  |   .0325297   .0071954      .0206903    .0443691
+          NCR-4th Dist.  |    .028304   .0055112      .0192358    .0373722
+                 Aurora  |   .2209878    .026854      .1768022    .2651734
+                Biliran  |   .1743915   .0385884       .110898     .237885
+               Guimaras  |   .0483871   .0394485     -.0165216    .1132958
+              Sarangani  |   .4726125   .0548803      .3823122    .5629127
+                 Apayao  |   .3087412   .0845721      .1695859    .4478964
+      Compostela Valley  |   .2195956   .0276827      .1740464    .2651447
+      Zamboanga Sibugay  |   .2412503   .0328558      .1871893    .2953113
+           Isabela City  |   .1828815   .0815376      .0487193    .3170437
+          Cotabato City  |   .2467958   .0538106      .1582556     .335336
+--------------------------------------------------------------------------
+Note: 458 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+
+. svy, subpop(if survey == 2): mean poor_new2015, over(province) level(90)
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =   374                   Number of obs   =        41,544
+Number of PSUs   = 3,145                   Population size = 8,378,043,640
+                                           Subpop. no. obs =        41,544
+                                           Subpop. size    = 8,378,043,640
+                                           Design df       =         2,771
+
+--------------------------------------------------------------------------
+                         |             Linearized
+                         |       Mean   std. err.     [90% conf. interval]
+-------------------------+------------------------------------------------
+ c.poor_new2015@province |
+                   Abra  |   .1989664   .0294353      .1505334    .2473994
+Agusan del Norte ((((((  |   .2557872   .0365008      .1957286    .3158457
+         Agusan del Sur  |   .3700969   .0378195      .3078686    .4323253
+                  Aklan  |   .1197521   .0356871      .0610324    .1784719
+                  Albay  |   .1832357   .0236546      .1443144    .2221571
+                Antique  |   .1840091   .0558713      .0920782      .27594
+                Basilan  |   .3562582    .064643      .2498943    .4626221
+                 Bataan  |   .0081135   .0078818     -.0048552    .0210822
+                Batanes  |         .1   3.47e-18            .1          .1
+               Batangas  |   .1692611   .0233829      .1307869    .2077354
+                Benguet  |   .0248741   .0058636      .0152261    .0345221
+                  Bohol  |   .2497146   .0320635      .1969573     .302472
+               Bukidnon  |   .4713093   .0311973      .4199772    .5226414
+                Bulacan  |   .0297838    .006356      .0193256    .0402419
+                Cagayan  |   .1371296   .0187919      .1062094    .1680498
+        Camarines Norte  |   .3444828   .0516878      .2594355    .4295301
+          Camarines Sur  |   .2852137   .0272509      .2403749    .3300524
+               Camiguin  |   .3385621   .0998716      .1742329    .5028912
+                  Capiz  |   .0699436   .0303806      .0199553    .1199319
+            Catanduanes  |   .3361057   .0413601      .2680515    .4041598
+                 Cavite  |   .0612487   .0107416      .0435743     .078923
+                   Cebu  |   .1984766   .0155797      .1728417    .2241115
+                  Davao  |   .2432105   .0404564      .1766434    .3097776
+           Davao de Sur  |     .14722   .0190629      .1158537    .1785862
+         Davao Oriental  |    .224834   .0363749      .1649825    .2846854
+          Eastern Samar  |   .4235287   .0727006      .3039068    .5431506
+                 Ifugao  |   .3493692   .0697819      .2345497    .4641886
+           Ilocos Norte  |   .0524124   .0175954      .0234609    .0813639
+             Ilocos Sur  |   .1079104   .0262857      .0646599     .151161
+                 Iloilo  |   .1615292   .0202387      .1282284    .1948301
+                Isabela  |   .1228324   .0136755      .1003307     .145334
+                Kalinga  |   .3448872   .0562538      .2523271    .4374473
+               La Union  |   .1351654   .0275844      .0897779     .180553
+                 Laguna  |   .0361374    .009367      .0207249    .0515498
+        Lanao del Norte  |   .3732872   .0527128      .2865533    .4600211
+          Lanao del Sur  |   .7204316   .0403842      .6539833      .78688
+                  Leyte  |   .2505704   .0237695      .2114601    .2896808
+            Maguindanao  |    .451592   .0381869       .388759    .5144249
+                 Manila  |   .0362538   .0092003      .0211156     .051392
+             Marinduque  |   .1246409   .0363568      .0648194    .1844625
+                Masbate  |   .3552828   .0391519       .290862    .4197035
+     Misamis Occidental  |   .3680018    .038079      .3053464    .4306572
+       Misamis Oriental  |   .1635378   .0205937      .1296528    .1974227
+      Mountain Province  |    .331363   .0574513      .2368324    .4258936
+      Negros Occidental  |   .2546466   .0251848      .2132075    .2960857
+        Negros Oriental  |    .361238   .0395327      .2961908    .4262852
+               Cotabato  |   .3651288   .0331583        .31057    .4196876
+         Northern Samar  |   .5148531   .0579259      .4195416    .6101646
+            Nueva Ecija  |   .1648325   .0212428      .1298795    .1997855
+          Nueva Vizcaya  |   .1046853   .0274757      .0594767    .1498939
+     Occidental Mindoro  |   .3050464   .0666721      .1953439     .414749
+       Oriental Mindoro  |    .147128   .0308887      .0963036    .1979524
+                Palawan  |   .1260853   .0276855      .0805314    .1716392
+               Pampanga  |   .0258109    .005939      .0160388     .035583
+             Pangasinan  |   .1699333   .0165694      .1426699    .1971967
+                 Quezon  |   .1842665   .0258185      .1417846    .2267484
+                Quirino  |   .2031147   .0548093      .1129314    .2932981
+                  Rizal  |   .0410877   .0079409      .0280218    .0541536
+                Romblon  |   .2866829   .0486419      .2066473    .3667184
+        Samar (Western)  |   .4184564   .0581073      .3228463    .5140664
+               Siquijor  |   .4696649   .0462759      .3935223    .5458075
+               Sorsogon  |   .4550202   .0493396      .3738367    .5362037
+         South Cotabato  |   .1829593   .0233453      .1445468    .2213718
+         Southern Leyte  |   .3266878   .0444755      .2535077    .3998679
+         Sultan Kudarat  |   .4123663   .0747499      .2893726      .53536
+                   Sulu  |   .6311177   .0535866       .542946    .7192893
+      Surigao del Norte  |   .3020116   .0315639      .2500763     .353947
+        Surigao del Sur  |   .3225698   .0338587      .2668585     .378281
+                 Tarlac  |   .1322784   .0183107      .1021498     .162407
+              Tawi-tawi  |   .1448429   .0460166       .069127    .2205588
+               Zambales  |   .1228825   .0232767      .0845829    .1611821
+    Zamboanga del Norte  |   .5077731   .0411662      .4400381    .5755082
+      Zamboanga del Sur  |   .1877342   .0233756      .1492719    .2261965
+          NCR-2nd Dist.  |   .0191234   .0039743      .0125841    .0256628
+          NCR-3rd Dist.  |   .0340575   .0071929      .0222223    .0458926
+          NCR-4th Dist.  |   .0308171   .0060777      .0208168    .0408175
+                 Aurora  |   .2729943   .0362407      .2133637    .3326249
+                Biliran  |   .1743915   .0385884       .110898     .237885
+               Guimaras  |   .0483871   .0394485     -.0165216    .1132958
+              Sarangani  |    .456094   .0542214      .3668779    .5453101
+                 Apayao  |   .3807373   .0933487      .2271411    .5343336
+      Compostela Valley  |   .2080295   .0264706      .1644746    .2515844
+      Zamboanga Sibugay  |   .2793982   .0294589      .2309264      .32787
+           Isabela City  |    .222239   .1005081      .0568626    .3876153
+          Cotabato City  |   .3848702   .0861456      .2431259    .5266144
+--------------------------------------------------------------------------
+Note: 458 strata omitted because they contain no subpopulation members.
+Note: Strata with single sampling unit centered at overall mean.
+
+. svy, subpop(if survey == 3): mean poor_new2015, over(province) level(90)
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =     87                  Number of obs   =       147,717
+Number of PSUs   = 10,770                  Population size = 3,850,694,740
+                                           Subpop. no. obs =       147,717
+                                           Subpop. size    = 3,850,694,740
+                                           Design df       =        10,683
+
+--------------------------------------------------------------------------
+                         |             Linearized
+                         |       Mean   std. err.     [90% conf. interval]
+-------------------------+------------------------------------------------
+ c.poor_new2015@province |
+                   Abra  |   .1466841   .0125823      .1259863    .1673819
+Agusan del Norte ((((((  |   .1892992   .0122162      .1692036    .2093948
+         Agusan del Sur  |   .3056927   .0216189      .2701297    .3412557
+                  Aklan  |   .0875522   .0122797      .0673522    .1077522
+                  Albay  |   .1495526   .0147747      .1252483    .1738568
+                Antique  |    .129287   .0135403      .1070133    .1515607
+                Basilan  |   .6634171    .022384      .6265954    .7002387
+                 Bataan  |   .0582229   .0083788      .0444397    .0720061
+                Batanes  |   .0652903   .0103709      .0482303    .0823504
+               Batangas  |   .0857927   .0108911      .0678768    .1037085
+                Benguet  |   .0424286   .0061208      .0323599    .0524974
+                  Bohol  |   .1545716   .0154454      .1291639    .1799792
+               Bukidnon  |   .2228068   .0163032       .195988    .2496256
+                Bulacan  |   .0354835   .0068334      .0242426    .0467245
+                Cagayan  |   .1249215   .0121143      .1049935    .1448494
+        Camarines Norte  |   .2241267   .0159734      .1978505    .2504029
+          Camarines Sur  |   .2095205   .0182669      .1794715    .2395695
+               Camiguin  |   .1793966     .01771      .1502637    .2085294
+                  Capiz  |   .0410931   .0061928      .0309059    .0512802
+            Catanduanes  |   .1439111   .0124573       .123419    .1644033
+                 Cavite  |   .0370723   .0067782      .0259223    .0482224
+                   Cebu  |   .1131579   .0112447      .0946604    .1316554
+                  Davao  |   .1026188    .013653      .0801596     .125078
+           Davao de Sur  |   .0812038   .0117539      .0618688    .1005389
+         Davao Oriental  |   .2770809   .0184864      .2466709    .3074909
+          Eastern Samar  |    .408643   .0213615      .3735034    .4437826
+                 Ifugao  |   .0991904   .0149942       .074525    .1238558
+           Ilocos Norte  |   .0307582   .0068342      .0195159    .0420005
+             Ilocos Sur  |   .0545217   .0079425      .0414563     .067587
+                 Iloilo  |   .1208279   .0113656      .1021316    .1395242
+                Isabela  |   .1319203   .0139282      .1090085     .154832
+                Kalinga  |   .0918179   .0114975      .0729046    .1107313
+               La Union  |   .0287539   .0056433      .0194706    .0380372
+                 Laguna  |    .027018   .0054343      .0180787    .0359574
+        Lanao del Norte  |   .1902662     .01347      .1681082    .2124243
+          Lanao del Sur  |   .6416551    .023693      .6026802    .6806301
+                  Leyte  |   .2165564   .0152209       .191518    .2415947
+            Maguindanao  |   .4064506   .0302438      .3566996    .4562015
+                 Manila  |   .0193341   .0059605       .009529    .0291392
+             Marinduque  |   .0995472   .0105396      .0822095    .1168849
+                Masbate  |   .2579415    .019268      .2262456    .2896373
+     Misamis Occidental  |   .1948063   .0170144      .1668177    .2227949
+       Misamis Oriental  |   .1144566   .0088663      .0998715    .1290417
+      Mountain Province  |   .1713586   .0176034      .1424011    .2003162
+      Negros Occidental  |   .1452708   .0155277      .1197279    .1708138
+        Negros Oriental  |   .1940791   .0186975      .1633219    .2248364
+               Cotabato  |   .2356454   .0249289      .1946375    .2766533
+         Northern Samar  |   .2761534   .0202148      .2429002    .3094066
+            Nueva Ecija  |   .0657451   .0087893      .0512867    .0802034
+          Nueva Vizcaya  |   .1163382   .0150081      .0916498    .1410265
+     Occidental Mindoro  |   .1605796   .0210686      .1259219    .1952374
+       Oriental Mindoro  |   .0730196   .0138554      .0502276    .0958117
+                Palawan  |   .0821203   .0107392      .0644544    .0997862
+               Pampanga  |   .0210913   .0061651      .0109497     .031233
+             Pangasinan  |   .0930786   .0111991      .0746561     .111501
+                 Quezon  |   .0934552   .0137312      .0708674     .116043
+                Quirino  |   .0893924    .010216      .0725871    .1061976
+                  Rizal  |   .0333246   .0057124      .0239278    .0427214
+                Romblon  |   .1969382    .017291      .1684946    .2253819
+        Samar (Western)  |   .2216961   .0195548      .1895285    .2538637
+               Siquijor  |   .0723246   .0145887      .0483262    .0963229
+               Sorsogon  |   .1957594   .0158854       .169628    .2218908
+         South Cotabato  |   .1372942   .0149698      .1126689    .1619196
+         Southern Leyte  |   .1733547   .0147401      .1491073    .1976021
+         Sultan Kudarat  |   .2428252   .0198969      .2100949    .2755555
+                   Sulu  |   .7528096   .0190056      .7215454    .7840737
+      Surigao del Norte  |   .2765035   .0178891       .247076     .305931
+        Surigao del Sur  |   .1919558   .0173564      .1634046    .2205069
+                 Tarlac  |   .0772938   .0084669      .0633658    .0912218
+              Tawi-tawi  |   .1507167   .0136135      .1283224    .1731109
+               Zambales  |   .1090435    .011403      .0902857    .1278014
+    Zamboanga del Norte  |   .3694681   .0270935      .3248994    .4140367
+      Zamboanga del Sur  |   .1743424   .0145296      .1504414    .1982435
+          NCR-2nd Dist.  |   .0142655   .0029203      .0094616    .0190695
+          NCR-3rd Dist.  |   .0217768    .003077      .0167151    .0268385
+          NCR-4th Dist.  |   .0069724   .0009857       .005351    .0085939
+                 Aurora  |   .1178153   .0136531      .0953559    .1402747
+                Biliran  |   .1368944   .0131877      .1152007     .158588
+               Guimaras  |   .0679123   .0127667      .0469111    .0889135
+              Sarangani  |   .3607115   .0326436      .3070128    .4144101
+                 Apayao  |   .1596202   .0221024      .1232619    .1959785
+      Compostela Valley  |   .1858692   .0155766      .1602457    .2114927
+      Zamboanga Sibugay  |   .2711359   .0213367      .2360371    .3062347
+         Dinagat Island  |   .2648957   .0269624      .2205425    .3092488
+       Davao Occidental  |   .3187756   .0215493      .2833272    .3542241
+           Isabela City  |   .4160494   .0352291      .3580976    .4740012
+          Cotabato City  |   .3521058   .0238249      .3129139    .3912977
+--------------------------------------------------------------------------
+Note: 745 strata omitted because they contain no subpopulation members.
+
+. 
+. 
+. save "01_Intermediate_Extracts\tob_alc_health_final.dta", replace
+file 01_Intermediate_Extracts\tob_alc_health_final.dta saved
+
+. *************************************************************************************
+. 
+. log close Log01_DataProcessing
+      name:  Log01_DataProcessing
+       log:  C:\Users\neljasonhaw\OneDrive\Documents\Teaching\Research\FIES 2012 to 2018\Code\03_Log_Files\01 Data Processing.log
+  log type:  text
+ closed on:   3 Aug 2021, 13:56:52
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -1,0 +1,3882 @@
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  Log03_ConcentrationCurve
+       log:  C:\Users\neljasonhaw\OneDrive\Documents\Teaching\Research\FIES 2012 to 2018\Code\03_Log_Files\03 Concentration Curves.log
+  log type:  text
+ opened on:  10 Aug 2021, 13:17:09
+
+. set more off
+
+. version 17
+
+. 
+. 
+. ******** Load data set, survey set declarations
+. use "01_Intermediate_Extracts\tob_alc_health_final.dta"
+
+. svyset psu [pweight = weight], strata(stratum) singleunit(centered)
+
+Sampling weights: weight
+             VCE: linearized
+     Single unit: centered
+        Strata 1: stratum
+ Sampling unit 1: psu
+           FPC 1: <zero>
+
+. // Need to generate fweights since most commands here on won't accept pweights
+. gen fweight = int(weight * 1000000)     
+
+. label variable fweight "Frequency weight (pweight * 1,000,000)"
+
+. 
+. 
+. ******** Store locals of all needed names
+. local shortname_inc tob alc hea inc
+
+. local longname_inc tobacco alcohol health toinc
+
+. local shortname_exp tob alc hea exp
+
+. local longname_exp tobacco alcohol health totex
+
+. 
+. local exp_name tob alc hea
+
+. local expense_name tobacco alcohol health
+
+. local title_exp_name " "Tobacco" "Alcohol" "Health OOP" "
+
+. 
+. local rank_varlist_tot toinc_2018 totex_2018
+
+. local rank_varlist_pc pcinc_2018 pcexp_2018
+
+. local rank_var_short1 inc_toinc exp_totex
+
+. local rank_var_short2 _toinc _totex
+
+. local rank_var_short3 inc_pcinc exp_pcexp
+
+. local rank_var_short4 pcinc pcexp
+
+. local title_rank_tot " "(ranked by total income)" "(ranked by total expenditure)" "
+
+. local title_rank_pc " "(ranked by per capita income)" "(ranked by per capita expenditure)" "
+
+. 
+. local surveyyear 2012 2015 2018
+
+. 
+. 
+. ******** Generate the per capita expenditure variables
+. forvalues i = 1/4 {
+  2.         local shortname_var: word `i' of `shortname_exp'
+  3.         local longname_var: word `i' of `longname_exp'
+  4.         gen pc`shortname_var'_2018 = `longname_var'_2018 / fsize
+  5.         label var pc`shortname_var'_2018 "`longname_var'_2018 per capita"
+  6. }
+
+. 
+. 
+. *************************************************************************************
+. ******** Concentration curves by survey year and expenditure type
+. // ssc install glcurve - Generalized Lorenz curves with microdata
+. 
+. 
+. **** Generate concentration curve variables
+. ** Main analysis - use per capita income (pcinc_2018) to rank variables
+. // Loop glcurve command and label resulting variables
+. forvalues i = 1/4 {
+  2.         local shortname_var: word `i' of `shortname_inc'
+  3.         glcurve pc`shortname_var'_2018 [fw = fweight], glvar(yord_`shortname_var'_pcinc) ///
+>                 pvar(rank_`shortname_var'_pcinc) sortvar(pcinc_2018) replace by(survey) split nograph lorenz
+  4.         label var yord_`shortname_var'_pcinc_1 "pc`shortname_var'_2018 2012 share - pcinc rank"
+  5.         label var yord_`shortname_var'_pcinc_2 "pc`shortname_var'_2018 2015 share - pcinc rank" 
+  6.         label var yord_`shortname_var'_pcinc_3 "pc`shortname_var'_2018 2018 share - pcinc rank"
+  7.         label var rank_`shortname_var'_pcinc "Rank in per capita income distribution" 
+  8. }
+new variable yord_tob_pcinc_1 created
+new variable yord_tob_pcinc_2 created
+new variable yord_tob_pcinc_3 created
+new variable rank_tob_pcinc created
+new variable yord_alc_pcinc_1 created
+new variable yord_alc_pcinc_2 created
+new variable yord_alc_pcinc_3 created
+new variable rank_alc_pcinc created
+new variable yord_hea_pcinc_1 created
+new variable yord_hea_pcinc_2 created
+new variable yord_hea_pcinc_3 created
+new variable rank_hea_pcinc created
+new variable yord_inc_pcinc_1 created
+new variable yord_inc_pcinc_2 created
+new variable yord_inc_pcinc_3 created
+new variable rank_inc_pcinc created
+
+. 
+. ** Sensitivity analysis 1 - use total household income (toinc_2018) to rank variables
+. // Loop glcurve command and label resulting variables
+. forvalues i = 1/4 {
+  2.         local shortname_var: word `i' of `shortname_inc'
+  3.         local longname_var: word `i' of `longname_inc'
+  4.         glcurve `longname_var'_2018 [fw = fweight], glvar(yord_`shortname_var'_toinc) ///
+>                 pvar(rank_`shortname_var'_toinc) sortvar(toinc_2018) replace by(survey) split nograph lorenz 
+  5.         label var yord_`shortname_var'_toinc_1 "`longname_var' 2012 share - toinc rank"
+  6.         label var yord_`shortname_var'_toinc_2 "`longname_var' 2015 share - toinc rank"
+  7.         label var yord_`shortname_var'_toinc_3 "`longname_var' 2018 share - toinc rank"
+  8.         label var rank_`shortname_var'_toinc "Rank in income distribution"
+  9. }
+new variable yord_tob_toinc_1 created
+new variable yord_tob_toinc_2 created
+new variable yord_tob_toinc_3 created
+new variable rank_tob_toinc created
+new variable yord_alc_toinc_1 created
+new variable yord_alc_toinc_2 created
+new variable yord_alc_toinc_3 created
+new variable rank_alc_toinc created
+new variable yord_hea_toinc_1 created
+new variable yord_hea_toinc_2 created
+new variable yord_hea_toinc_3 created
+new variable rank_hea_toinc created
+new variable yord_inc_toinc_1 created
+new variable yord_inc_toinc_2 created
+new variable yord_inc_toinc_3 created
+new variable rank_inc_toinc created
+
+. // All the rank_* variables are the same since they are all ranked by toinc_2018
+. 
+. ** Sensitivity analysis 2 - use total household expenditure (totex_2018) instead to rank variables
+. // Loop glcurve command and label resulting variables
+. forvalues i = 1/4 {
+  2.         local shortname2_var: word `i' of `shortname_exp'
+  3.         local longname2_var: word `i' of `longname_exp'
+  4.         glcurve `longname2_var'_2018 [fw = fweight], glvar(yord_`shortname2_var'_totex) ///
+>                 pvar(rank_`shortname2_var'_totex) sortvar(totex_2018) replace by(survey) split nograph lorenz 
+  5.         label var yord_`shortname2_var'_totex_1 "`longname2_var' 2012 share - totex rank"
+  6.         label var yord_`shortname2_var'_totex_2 "`longname2_var' 2015 share - totex rank"
+  7.         label var yord_`shortname2_var'_totex_3 "`longname2_var' 2018 share - totex rank"
+  8.         label var rank_`shortname2_var'_totex "Rank in expenditure distribution"
+  9. }
+new variable yord_tob_totex_1 created
+new variable yord_tob_totex_2 created
+new variable yord_tob_totex_3 created
+new variable rank_tob_totex created
+new variable yord_alc_totex_1 created
+new variable yord_alc_totex_2 created
+new variable yord_alc_totex_3 created
+new variable rank_alc_totex created
+new variable yord_hea_totex_1 created
+new variable yord_hea_totex_2 created
+new variable yord_hea_totex_3 created
+new variable rank_hea_totex created
+new variable yord_exp_totex_1 created
+new variable yord_exp_totex_2 created
+new variable yord_exp_totex_3 created
+new variable rank_exp_totex created
+
+. 
+. ** Sensitivity analysis 3 - use per capital expenditure (pcexp_2018) to rank variables
+. // Loop glcurve command label resulting variables - per capita expenditure as rank
+. forvalues i = 1/4 {
+  2.         local shortname2_var: word `i' of `shortname_exp'
+  3.         glcurve pc`shortname2_var'_2018 [fw = fweight], glvar(yord_`shortname2_var'_pcexp) ///
+>                 pvar(rank_`shortname2_var'_pcexp) sortvar(pcexp_2018) replace by(survey) split nograph lorenz
+  4.         label var yord_`shortname2_var'_pcexp_1 "pc`shortname2_var'_2018 2012 share - pcexp rank"
+  5.         label var yord_`shortname2_var'_pcexp_2 "pc`shortname2_var'_2018 2015 share - pcexp rank"       
+  6.         label var yord_`shortname2_var'_pcexp_3 "pc`shortname2_var'_2018 2018 share - pcexp rank"
+  7.         label var rank_`shortname2_var'_pcexp "Rank in per capita expenditure distribution" 
+  8. }
+new variable yord_tob_pcexp_1 created
+new variable yord_tob_pcexp_2 created
+new variable yord_tob_pcexp_3 created
+new variable rank_tob_pcexp created
+new variable yord_alc_pcexp_1 created
+new variable yord_alc_pcexp_2 created
+new variable yord_alc_pcexp_3 created
+new variable rank_alc_pcexp created
+new variable yord_hea_pcexp_1 created
+new variable yord_hea_pcexp_2 created
+new variable yord_hea_pcexp_3 created
+new variable rank_hea_pcexp created
+new variable yord_exp_pcexp_1 created
+new variable yord_exp_pcexp_2 created
+new variable yord_exp_pcexp_3 created
+new variable rank_exp_pcexp created
+
+. 
+. ** Save data
+. save "01_Intermediate_Extracts\tob_alc_health_final_concurve.dta", replace
+file 01_Intermediate_Extracts\tob_alc_health_final_concurve.dta saved
+
+. 
+. 
+. **** Set theme
+. // Use scheme cleanplots:  net install cleanplots, from("https://tdmize.github.io/data/cleanplots")
+. // Customize colors: ssc install palettes
+. // colorpalette economist: extract navy for 2012, maroon for 2015, teal for 2018
+. set scheme cleanplots
+
+. graph set window fontface HelveticaforSAS
+
+. 
+. // Remove gridlines - ssc install grstyle
+. grstyle init 
+
+. grstyle set plain, nogrid noextend
+
+. 
+. 
+. **** Curves per expenditure category - main figure in paper, customize layout per plot
+. // Tobacco
+. twoway (line rank_inc_pcinc rank_inc_pcinc, sort clpat(dash) clwidth(medthick) clcolor(gray)) ///
+>            (line yord_tob_pcinc_1 rank_tob_pcinc, sort clpat(solid) clwidth(thick) clcolor(navy)) ///
+>            (line yord_tob_pcinc_2 rank_tob_pcinc, sort clpat(solid) clwidth(thick) clcolor(maroon)) ///
+>            (line yord_tob_pcinc_3 rank_tob_pcinc, sort clpat(solid) clwidth(thick) clcolor(teal)), ///
+>            ytitle("Cumulative proportion of per capita expenditure") ///
+>            xtitle("Cumulative population proportion" "(ranked ascending by per capita income)")  ///
+>            legend(label(1 "Line of equality") label(2 "2012") label(3 "2015") label(4 "2018") order(2 3 4 1) position(10) ring(0)) ///
+>            ylabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>            xlabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>            title({bf:TOBACCO}) ///
+>            saving("02_Figures\fig2A", replace)
+file 02_Figures\fig2A.gph saved
+
+. 
+. // Alcohol
+. twoway (line rank_inc_pcinc rank_inc_pcinc, sort clpat(dash) clwidth(medthick) clcolor(gray)) ///
+>            (line yord_alc_pcinc_1 rank_alc_pcinc, sort clpat(solid) clwidth(thick) clcolor(navy)) ///
+>            (line yord_alc_pcinc_2 rank_alc_pcinc, sort clpat(solid) clwidth(thick) clcolor(maroon)) ///
+>            (line yord_alc_pcinc_3 rank_alc_pcinc, sort clpat(solid) clwidth(thick) clcolor(teal)), ///
+>            ytitle("") ///
+>            xtitle("Cumulative population proportion" "(ranked ascending by per capita income)")  ///
+>            legend(off) ///
+>            ylabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///           
+>            xlabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>            title({bf:ALCOHOL}) ///
+>            saving("02_Figures\fig2B", replace)
+file 02_Figures\fig2B.gph saved
+
+. 
+. // Health OOP
+. twoway (line rank_inc_pcinc rank_inc_pcinc, sort clpat(dash) clwidth(medthick) clcolor(gray)) ///
+>            (line yord_hea_pcinc_1 rank_hea_pcinc, sort clpat(solid) clwidth(thick) clcolor(navy)) ///
+>            (line yord_hea_pcinc_2 rank_hea_pcinc, sort clpat(solid) clwidth(thick) clcolor(maroon)) ///
+>            (line yord_hea_pcinc_3 rank_hea_pcinc, sort clpat(solid) clwidth(thick) clcolor(teal)), ///
+>            ytitle("") ///
+>            xtitle("Cumulative population proportion" "(ranked ascending by per capita income)")  ///
+>            legend(off) ///
+>            ylabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>            xlabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>            title({bf:HEALTH OOP}) ///
+>            saving("02_Figures\fig2C", replace)
+file 02_Figures\fig2C.gph saved
+
+. 
+. // Combine them altogether
+. graph combine "02_Figures\fig2A" "02_Figures\fig2B" "02_Figures\fig2C", ///
+> rows(1) ycommon xcommon ysize(4.5) xsize(10) iscale(0.9) saving("02_Figures\fig2", replace)
+file 02_Figures\fig2.gph saved
+
+. graph export "02_Figures\fig2.tif", replace
+file 02_Figures\fig2.tif saved as TIFF format
+
+. 
+. 
+. **** Curves per expenditure category - supplementary, sensitivity analysis, no need to customize
+. // toinc_2018 rank
+. local toinc_title " "Tobacco (by total income)" "Alcohol (by total income)" "Health OOP (by total income)" "
+
+. forvalues i = 1/3 {
+  2.         local name: word `i' of `exp_name'
+  3.         local title: word `i' of `toinc_title'
+  4.         twoway (line rank_inc_toinc rank_inc_toinc, sort clpat(dash) clwidth(medthick) clcolor(gray)) ///
+>                    (line yord_`name'_toinc_1 rank_inc_toinc, sort clpat(solid) clwidth(thick) clcolor(navy)) ///
+>                    (line yord_`name'_toinc_2 rank_inc_toinc, sort clpat(solid) clwidth(thick) clcolor(maroon)) ///
+>                    (line yord_`name'_toinc_3 rank_inc_toinc, sort clpat(solid) clwidth(thick) clcolor(teal)), ///
+>                    ytitle("Cumulative proportion of expenditure") ///
+>                    xtitle("Cumulative population proportion" "(ranked ascending by total income)") ///
+>                    legend(label(1 "Line of equality") label(2 "2012") label(3 "2015") label(4 "2018") order(2 3 4 1) position(10) ring(0)) ///
+>                    ylabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>                xlabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>                title(`title') ///
+>                saving("02_Figures\Supplementary_Figures\suppfig_toinc_`name'", replace)
+  5. }
+file 02_Figures\Supplementary_Figures\suppfig_toinc_tob.gph saved
+file 02_Figures\Supplementary_Figures\suppfig_toinc_alc.gph saved
+file 02_Figures\Supplementary_Figures\suppfig_toinc_hea.gph saved
+
+. 
+. // totex_2018 rank
+. local exp_title " "Tobacco (by total expenditure)" "Alcohol (by total expenditure)" "Health OOP (by total expenditure)" "
+
+. forvalues i = 1/3 {
+  2.         local name: word `i' of `exp_name'
+  3.         local title: word `i' of `exp_title'
+  4.         twoway (line rank_exp_totex rank_exp_totex, sort clpat(dash) clwidth(medthick) clcolor(gray)) ///
+>                    (line yord_`name'_totex_1 rank_exp_totex, sort clpat(solid) clwidth(thick) clcolor(navy)) ///
+>                    (line yord_`name'_totex_2 rank_exp_totex, sort clpat(solid) clwidth(thick) clcolor(maroon)) ///
+>                    (line yord_`name'_totex_3 rank_exp_totex, sort clpat(solid) clwidth(thick) clcolor(teal)), ///
+>                    ytitle("Cumulative proportion of expenditure") ///
+>                    xtitle("Cumulative population proportion" "(ranked ascending by total expenditure)") ///
+>                    legend(label(1 "Line of equality") label(2 "2012") label(3 "2015") label(4 "2018") order(2 3 4 1) position(10) ring(0)) ///
+>                    ylabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>                xlabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>                title(`title') ///
+>                saving("02_Figures\Supplementary_Figures\suppfig_totex_`name'", replace)
+  5. }
+file 02_Figures\Supplementary_Figures\suppfig_totex_tob.gph saved
+file 02_Figures\Supplementary_Figures\suppfig_totex_alc.gph saved
+file 02_Figures\Supplementary_Figures\suppfig_totex_hea.gph saved
+
+. 
+. // pcexp_2018 rank
+. local pcexp_title " "Tobacco (by per capita expenditure)" "Alcohol (by per capita expenditure)" "Health OOP (by per capita expenditure)" "
+
+. forvalues i = 1/3 {
+  2.         local name: word `i' of `exp_name'
+  3.         local title: word `i' of `pcexp_title'
+  4.         twoway (line rank_exp_pcexp rank_exp_pcexp, sort clpat(dash) clwidth(medthick) clcolor(gray)) ///
+>                    (line yord_`name'_pcexp_1 rank_exp_pcexp, sort clpat(solid) clwidth(thick) clcolor(navy)) ///
+>                    (line yord_`name'_pcexp_2 rank_exp_pcexp, sort clpat(solid) clwidth(thick) clcolor(maroon)) ///
+>                    (line yord_`name'_pcexp_3 rank_exp_pcexp, sort clpat(solid) clwidth(thick) clcolor(teal)), ///
+>                    ytitle("Cumulative proportion of per capita expenditure") ///
+>                    xtitle("Cumulative population proportion" "(ranked ascending by per capita expenditure)") ///
+>                    legend(label(1 "Line of equality") label(2 "2012") label(3 "2015") label(4 "2018") order(2 3 4 1) position(10) ring(0)) ///
+>                    ylabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>                xlabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>                title(`title') ///
+>                saving("02_Figures\Supplementary_Figures\suppfig_pcexp_`name'", replace)
+  5. }
+file 02_Figures\Supplementary_Figures\suppfig_pcexp_tob.gph saved
+file 02_Figures\Supplementary_Figures\suppfig_pcexp_alc.gph saved
+file 02_Figures\Supplementary_Figures\suppfig_pcexp_hea.gph saved
+
+. 
+. // Combine them altogether
+. graph combine "02_Figures\Supplementary_Figures\suppfig_toinc_tob" "02_Figures\Supplementary_Figures\suppfig_toinc_alc" "02_Figures\Supplementary_Figures\supp
+> fig_toinc_hea" ///
+>         "02_Figures\Supplementary_Figures\suppfig_totex_tob" "02_Figures\Supplementary_Figures\suppfig_totex_alc" "02_Figures\Supplementary_Figures\suppfig_to
+> tex_hea" ///
+>         "02_Figures\Supplementary_Figures\suppfig_pcexp_tob" "02_Figures\Supplementary_Figures\suppfig_pcexp_alc" "02_Figures\Supplementary_Figures\suppfig_pc
+> exp_hea", ///
+> rows(3) col(3) ycommon xcommon ysize(12) xsize(15.6) iscale(0.4) saving("02_Figures\Supplementary_Figures\suppfig_otherrank", replace)
+file 02_Figures\Supplementary_Figures\suppfig_otherrank.gph saved
+
+. graph export "02_Figures\Supplementary_Figures\suppfig_otherrank.tif", replace
+file 02_Figures\Supplementary_Figures\suppfig_otherrank.tif saved as TIFF format
+
+. *************************************************************************************
+. 
+. 
+. 
+. 
+. *************************************************************************************
+. ******** Testing for dominance
+. // Download dominance package http://132.203.59.36/dad
+. // Alternatively there is a newer Lorenz package from ssc install lorenz
+. 
+. **** Create a program to automate the process of creating a twoway plot of
+. **** line of equality, Lorenz curves, and the concentration curve
+. capture program drop conc_curve
+
+. program define conc_curve
+  1.         syntax varlist(min = 3 max = 3), survey(integer) name(string)
+  2.         local rank: word 1 of `varlist'
+  3.         local income: word 2 of `varlist'
+  4.         local expend: word 3 of `varlist'
+  5.         local title = "`name'`survey'"
+  6.         local filename = "02_Figures/Supplementary_Figures\cc_`expend'_`rank'_`income'"
+  7.         twoway  (line `rank' `rank', sort clpat(dash) clwidth(medium) clcolor(gray)) ///
+>                         (line `income' `rank', sort clpat(solid) clwidth(medium) clcolor(black)) ///
+>                         (line `expend' `rank', sort clpat(solid) clwidth(medium) clcolor(maroon)), ///
+>                         ytitle("Cumulative proportion of expenditure") ///
+>                         xtitle("Cumulative population proportion")  ///
+>                         legend(label(1 "Line of equality") label(2 "Lorenz curve") label(3 "`survey'") ///
+>                                 order(3 2 1) position(10) ring(0)) ///
+>                         ylabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>                 xlabel(0 "0%" 0.2 "20%" 0.4 "40%" 0.6 "60%" 0.8 "80%" 1.0 "100%") ///
+>                         title("`name' `survey'") ///
+>                         saving("`filename'", replace)
+  8. end
+
+. 
+. 
+. **** Dominance tests of each individual concentration curve vs Lorenz curve and line of equality
+. // Generate a separate linelist for each survey round since the dominance command can only handle one group at a time
+. // While doing this, run dominance vs. Lorenz curve of household income and line of equality
+. // Also show the curves using conc_curve
+. // aweights are allowed, just use weight as is
+. // Unfortunately, the results are not stored in a scalar or matrix, so copy manually from log file
+. 
+. // Loop command
+. forvalues h = 1/3 {
+  2.         preserve
+  3.         keep if survey == `h'
+  4.         local year: word `h' of `surveyyear'
+  5.         // Ranking by total household income and total household expenditure
+.         forvalues i = 1/2 {
+  6.                 local rankvar: word `i' of `rank_varlist_tot'
+  7.                 local rank_short: word `i' of `rank_var_short1'
+  8.                 local title_rank_word: word `i' of `title_rank_tot'
+  9.                 local shortname2: word `i' of `rank_var_short2'
+ 10.                 forvalues j = 1/3 {
+ 11.                         local longname: word `j' of `expense_name'
+ 12.                         local shortname: word `j' of `exp_name'
+ 13.                         local title_exp_name_word: word `j' of `title_exp_name'
+ 14.                         di "Dominance test for `longname'_2018 using rank `rankvar' for the year `year'"
+ 15.                         dominance `longname'_2018 [aw = weight], sortvar(`rankvar') shares(quintiles)
+ 16.                         conc_curve rank_`rank_short' yord_`rank_short'_`h' yord_`shortname'`shortname2'_`h', survey(`year') name("`title_exp_name_word' `ti
+> tle_rank_word'")
+ 17.                 }
+ 18.         }
+ 19.         // Ranking by per capita household income and household expenditure
+.         forvalues i = 1/2 {
+ 20.                 local rankvar: word `i' of `rank_varlist_pc'
+ 21.                 local rank_short: word `i' of `rank_var_short3'
+ 22.                 local shortname2: word `i' of `rank_var_short4'
+ 23.                 local title_rank_word: word `i' of `title_rank_pc'
+ 24.                 forvalues j = 1/3 {
+ 25.                         local shortname: word `j' of `exp_name'
+ 26.                         local title_exp_name_word: word `j' of `title_exp_name'
+ 27.                         di "Dominance test for pc`shortname'_2018 using rank `rankvar' for the year `year'"
+ 28.                         dominance pc`shortname'_2018 [aw = weight], sortvar(`rankvar') shares(quintiles)
+ 29.                         conc_curve rank_`rank_short' yord_`rank_short'_`h' yord_`shortname'_`shortname2'_`h', survey(`year') name("`title_exp_name_word' `t
+> itle_rank_word'")
+ 30.                 }
+ 31.         }
+ 32.         save "01_Intermediate_Extracts\tob_alc_health_final_concurve_`year'.dta", replace
+ 33.         restore
+ 34. }
+(189,261 observations deleted)
+Dominance test for tobacco_2018 using rank toinc_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+tobacco_2018toinc_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+tobacco_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of toinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           4.9698%        0.0330        0.0000
+q40          13.7613%        0.0778        0.0000
+q60          26.9137%        0.1357        0.0000
+q80          48.0577%        0.2072        0.0000
+-------------------------------------------------------
+
+Cummulative shares of tobacco_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20          11.4876%        0.2076        0.0000        0.0000
+q40          28.7316%        0.3333        0.0000        0.0000
+q60          49.6828%        0.4256        0.0000        0.0000
+q80          74.0950%        0.4405        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_toinc_1_rank_inc_toinc_yord_inc_toinc_1.gph saved
+Dominance test for alcohol_2018 using rank toinc_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+alcohol_2018toinc_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+alcohol_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of toinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           4.9698%        0.0330        0.0000
+q40          13.7613%        0.0778        0.0000
+q60          26.9137%        0.1357        0.0000
+q80          48.0577%        0.2072        0.0000
+-------------------------------------------------------
+
+Cummulative shares of alcohol_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           9.2718%        0.2109        0.0000        0.0000
+q40          24.4172%        0.3450        0.0000        0.0000
+q60          44.3941%        0.4598        0.0000        0.0000
+q80          69.2934%        0.5210        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_toinc_1_rank_inc_toinc_yord_inc_toinc_1.gph saved
+Dominance test for health_2018 using rank toinc_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+health_2018toinc_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+health_2018     5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of toinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           4.9698%        0.0330        0.0000
+q40          13.7613%        0.0778        0.0000
+q60          26.9137%        0.1357        0.0000
+q80          48.0577%        0.2072        0.0000
+-------------------------------------------------------
+
+Cummulative shares of health_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           3.3128%        0.1186        0.0000        0.0000
+q40           9.8442%        0.2684        0.0000        0.0000
+q60          21.1626%        0.5021        0.0000        0.0000
+q80          41.1379%        0.8539        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_toinc_1_rank_inc_toinc_yord_inc_toinc_1.gph saved
+Dominance test for tobacco_2018 using rank totex_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+tobacco_2018totex_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+tobacco_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of totex_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.7419%        0.0330        0.0000
+q40          15.5402%        0.0733        0.0000
+q60          29.8082%        0.1221        0.0000
+q80          51.5510%        0.1747        0.0000
+-------------------------------------------------------
+
+Cummulative shares of tobacco_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20          10.3457%        0.1886        0.0000        0.0000
+q40          27.3942%        0.3201        0.0000        0.0000
+q60          48.2059%        0.4217        0.0000        0.0000
+q80          72.8515%        0.4468        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_totex_1_rank_exp_totex_yord_exp_totex_1.gph saved
+Dominance test for alcohol_2018 using rank totex_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+alcohol_2018totex_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+alcohol_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of totex_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.7419%        0.0330        0.0000
+q40          15.5402%        0.0733        0.0000
+q60          29.8082%        0.1221        0.0000
+q80          51.5510%        0.1747        0.0000
+-------------------------------------------------------
+
+Cummulative shares of alcohol_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           8.8379%        0.1925        0.0000        0.0000
+q40          23.7255%        0.3370        0.0000        0.0000
+q60          43.4197%        0.4550        0.0000        0.0000
+q80          68.8790%        0.5148        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_totex_1_rank_exp_totex_yord_exp_totex_1.gph saved
+Dominance test for health_2018 using rank totex_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+health_2018totex_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+health_2018     5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of totex_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.7419%        0.0330        0.0000
+q40          15.5402%        0.0733        0.0000
+q60          29.8082%        0.1221        0.0000
+q80          51.5510%        0.1747        0.0000
+-------------------------------------------------------
+
+Cummulative shares of health_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           2.6561%        0.0839        0.0000        0.0000
+q40           8.5278%        0.2274        0.0000        0.0000
+q60          18.5560%        0.4308        0.0000        0.0000
+q80          36.7020%        0.7535        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_totex_1_rank_exp_totex_yord_exp_totex_1.gph saved
+Dominance test for pctob_2018 using rank pcinc_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pctob_2018 pcinc_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pctob_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           4.7630%        0.0340        0.0000
+q40          12.9454%        0.0845        0.0000
+q60          25.5252%        0.1538        0.0000
+q80          45.8569%        0.2454        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pctob_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20          11.3028%        0.1975        0.0000        0.0000
+q40          28.2409%        0.3567        0.0000        0.0000
+q60          49.0007%        0.4876        0.0000        0.0000
+q80          74.0767%        0.5462        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_pcinc_1_rank_inc_pcinc_yord_inc_pcinc_1.gph saved
+Dominance test for pcalc_2018 using rank pcinc_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pcalc_2018 pcinc_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pcalc_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           4.7630%        0.0340        0.0000
+q40          12.9454%        0.0845        0.0000
+q60          25.5252%        0.1538        0.0000
+q80          45.8569%        0.2454        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pcalc_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           8.0273%        0.1717        0.0000        0.0000
+q40          21.8628%        0.3458        0.0000        0.0000
+q60          41.6793%        0.5315        0.0000        0.0000
+q80          67.3473%        0.6536        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_pcinc_1_rank_inc_pcinc_yord_inc_pcinc_1.gph saved
+Dominance test for pchea_2018 using rank pcinc_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pchea_2018 pcinc_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pchea_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           4.7630%        0.0340        0.0000
+q40          12.9454%        0.0845        0.0000
+q60          25.5252%        0.1538        0.0000
+q80          45.8569%        0.2454        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pchea_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           2.5667%        0.1001        0.0000        0.0000
+q40           7.8610%        0.2367        0.0000        0.0000
+q60          17.0770%        0.4536        0.0000        0.0000
+q80          37.6263%        0.9067        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_pcinc_1_rank_inc_pcinc_yord_inc_pcinc_1.gph saved
+Dominance test for pctob_2018 using rank pcexp_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pctob_2018 pcexp_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pctob_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcexp_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.5956%        0.0326        0.0000
+q40          14.7558%        0.0771        0.0000
+q60          28.3347%        0.1335        0.0000
+q80          49.4297%        0.1995        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pctob_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20          10.4750%        0.1803        0.0000        0.0000
+q40          26.7537%        0.3355        0.0000        0.0000
+q60          47.6380%        0.4796        0.0000        0.0000
+q80          72.5476%        0.5512        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_pcexp_1_rank_exp_pcexp_yord_exp_pcexp_1.gph saved
+Dominance test for pcalc_2018 using rank pcexp_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pcalc_2018 pcexp_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pcalc_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcexp_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.5956%        0.0326        0.0000
+q40          14.7558%        0.0771        0.0000
+q60          28.3347%        0.1335        0.0000
+q80          49.4297%        0.1995        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pcalc_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           7.5231%        0.1554        0.0000        0.0000
+q40          20.7453%        0.3286        0.0000        0.0000
+q60          40.5914%        0.5201        0.0000        0.0000
+q80          66.7344%        0.6624        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_pcexp_1_rank_exp_pcexp_yord_exp_pcexp_1.gph saved
+Dominance test for pchea_2018 using rank pcexp_2018 for the year 2012
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pchea_2018 pcexp_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pchea_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcexp_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.5956%        0.0326        0.0000
+q40          14.7558%        0.0771        0.0000
+q60          28.3347%        0.1335        0.0000
+q80          49.4297%        0.1995        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pchea_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           1.9940%        0.0684        0.0000        0.0000
+q40           6.6400%        0.1882        0.0000        0.0000
+q60          15.1906%        0.3970        0.0000        0.0000
+q80          32.8007%        0.7791        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_pcexp_1_rank_exp_pcexp_yord_exp_pcexp_1.gph saved
+file 01_Intermediate_Extracts\tob_alc_health_final_concurve_2012.dta saved
+(187,888 observations deleted)
+Dominance test for tobacco_2018 using rank toinc_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+tobacco_2018toinc_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+tobacco_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of toinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.3688%        0.0342        0.0000
+q40          14.6411%        0.0795        0.0000
+q60          28.2230%        0.1376        0.0000
+q80          49.4955%        0.2096        0.0000
+-------------------------------------------------------
+
+Cummulative shares of tobacco_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20          11.6695%        0.2169        0.0000        0.0000
+q40          29.6927%        0.3422        0.0000        0.0000
+q60          51.0088%        0.4176        0.0000        0.0000
+q80          75.2795%        0.4116        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_toinc_2_rank_inc_toinc_yord_inc_toinc_2.gph saved
+Dominance test for alcohol_2018 using rank toinc_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+alcohol_2018toinc_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+alcohol_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of toinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.3688%        0.0342        0.0000
+q40          14.6411%        0.0795        0.0000
+q60          28.2230%        0.1376        0.0000
+q80          49.4955%        0.2096        0.0000
+-------------------------------------------------------
+
+Cummulative shares of alcohol_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20          10.4248%        0.2462        0.0000        0.0000
+q40          25.9521%        0.3679        0.0000        0.0000
+q60          45.5054%        0.4626        0.0000        0.0000
+q80          69.7471%        0.4927        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_toinc_2_rank_inc_toinc_yord_inc_toinc_2.gph saved
+Dominance test for health_2018 using rank toinc_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+health_2018toinc_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+health_2018     5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of toinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.3688%        0.0342        0.0000
+q40          14.6411%        0.0795        0.0000
+q60          28.2230%        0.1376        0.0000
+q80          49.4955%        0.2096        0.0000
+-------------------------------------------------------
+
+Cummulative shares of health_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           4.0243%        0.1457        0.0000        0.0000
+q40          10.7123%        0.2711        0.0000        0.0000
+q60          22.7621%        0.4997        0.0000        0.0000
+q80          43.7826%        0.7986        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_toinc_2_rank_inc_toinc_yord_inc_toinc_2.gph saved
+Dominance test for tobacco_2018 using rank totex_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+tobacco_2018totex_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+tobacco_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of totex_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           6.0735%        0.0328        0.0000
+q40          16.2898%        0.0711        0.0000
+q60          30.9560%        0.1164        0.0000
+q80          52.9239%        0.1632        0.0000
+-------------------------------------------------------
+
+Cummulative shares of tobacco_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20          10.3915%        0.1961        0.0000        0.0000
+q40          27.8205%        0.3281        0.0000        0.0000
+q60          50.0893%        0.4150        0.0000        0.0000
+q80          74.6811%        0.4112        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_totex_2_rank_exp_totex_yord_exp_totex_2.gph saved
+Dominance test for alcohol_2018 using rank totex_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+alcohol_2018totex_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+alcohol_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of totex_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           6.0735%        0.0328        0.0000
+q40          16.2898%        0.0711        0.0000
+q60          30.9560%        0.1164        0.0000
+q80          52.9239%        0.1632        0.0000
+-------------------------------------------------------
+
+Cummulative shares of alcohol_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           9.8143%        0.2180        0.0000        0.0000
+q40          25.0508%        0.3572        0.0000        0.0000
+q60          44.6855%        0.4582        0.0000        0.0000
+q80          69.2359%        0.4939        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_totex_2_rank_exp_totex_yord_exp_totex_2.gph saved
+Dominance test for health_2018 using rank totex_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+health_2018totex_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+health_2018     5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of totex_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           6.0735%        0.0328        0.0000
+q40          16.2898%        0.0711        0.0000
+q60          30.9560%        0.1164        0.0000
+q80          52.9239%        0.1632        0.0000
+-------------------------------------------------------
+
+Cummulative shares of health_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           3.2215%        0.0992        0.0000        0.0000
+q40           9.2758%        0.2258        0.0000        0.0000
+q60          19.9233%        0.4181        0.0000        0.0000
+q80          39.7606%        0.7259        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_totex_2_rank_exp_totex_yord_exp_totex_2.gph saved
+Dominance test for pctob_2018 using rank pcinc_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pctob_2018 pcinc_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pctob_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.1454%        0.0342        0.0000
+q40          13.8380%        0.0834        0.0000
+q60          26.9048%        0.1489        0.0000
+q80          47.5156%        0.2331        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pctob_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20          11.1433%        0.2004        0.0000        0.0000
+q40          27.9113%        0.3597        0.0000        0.0000
+q60          49.6760%        0.4966        0.0000        0.0000
+q80          74.5066%        0.5411        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_pcinc_2_rank_inc_pcinc_yord_inc_pcinc_2.gph saved
+Dominance test for pcalc_2018 using rank pcinc_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pcalc_2018 pcinc_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pcalc_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.1454%        0.0342        0.0000
+q40          13.8380%        0.0834        0.0000
+q60          26.9048%        0.1489        0.0000
+q80          47.5156%        0.2331        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pcalc_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           8.6907%        0.1975        0.0000        0.0000
+q40          22.7645%        0.3725        0.0000        0.0000
+q60          43.2832%        0.5604        0.0000        0.0000
+q80          68.2815%        0.6708        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_pcinc_2_rank_inc_pcinc_yord_inc_pcinc_2.gph saved
+Dominance test for pchea_2018 using rank pcinc_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pchea_2018 pcinc_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pchea_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.1454%        0.0342        0.0000
+q40          13.8380%        0.0834        0.0000
+q60          26.9048%        0.1489        0.0000
+q80          47.5156%        0.2331        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pchea_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           2.7726%        0.1053        0.0000        0.0000
+q40           8.3991%        0.2549        0.0000        0.0000
+q60          18.4477%        0.4649        0.0000        0.0000
+q80          38.0098%        0.8426        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_pcinc_2_rank_inc_pcinc_yord_inc_pcinc_2.gph saved
+Dominance test for pctob_2018 using rank pcexp_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pctob_2018 pcexp_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pctob_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcexp_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.9215%        0.0332        0.0000
+q40          15.4954%        0.0776        0.0000
+q60          29.5248%        0.1336        0.0000
+q80          50.8260%        0.1991        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pctob_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20          10.0799%        0.1789        0.0000        0.0000
+q40          26.4713%        0.3416        0.0000        0.0000
+q60          48.4396%        0.4882        0.0000        0.0000
+q80          74.1448%        0.5475        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_pcexp_2_rank_exp_pcexp_yord_exp_pcexp_2.gph saved
+Dominance test for pcalc_2018 using rank pcexp_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pcalc_2018 pcexp_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pcalc_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcexp_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.9215%        0.0332        0.0000
+q40          15.4954%        0.0776        0.0000
+q60          29.5248%        0.1336        0.0000
+q80          50.8260%        0.1991        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pcalc_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           7.9905%        0.1741        0.0000        0.0000
+q40          22.0228%        0.3596        0.0000        0.0000
+q60          41.9965%        0.5481        0.0000        0.0000
+q80          68.3997%        0.6747        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_pcexp_2_rank_exp_pcexp_yord_exp_pcexp_2.gph saved
+Dominance test for pchea_2018 using rank pcexp_2018 for the year 2015
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pchea_2018 pcexp_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pchea_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcexp_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.9215%        0.0332        0.0000
+q40          15.4954%        0.0776        0.0000
+q60          29.5248%        0.1336        0.0000
+q80          50.8260%        0.1991        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pchea_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           2.0796%        0.0678        0.0000        0.0000
+q40           6.8861%        0.1850        0.0000        0.0000
+q60          16.0100%        0.3888        0.0000        0.0000
+q80          33.8194%        0.7420        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_pcexp_2_rank_exp_pcexp_yord_exp_pcexp_2.gph saved
+file 01_Intermediate_Extracts\tob_alc_health_final_concurve_2015.dta saved
+(81,715 observations deleted)
+Dominance test for tobacco_2018 using rank toinc_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+tobacco_2018toinc_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+tobacco_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of toinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.9420%        0.0228        0.0000
+q40          15.8988%        0.0552        0.0000
+q60          30.1478%        0.0982        0.0000
+q80          51.5159%        0.1563        0.0000
+-------------------------------------------------------
+
+Cummulative shares of tobacco_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           9.8173%        0.1091        0.0000        0.0000
+q40          25.6579%        0.1814        0.0000        0.0000
+q60          46.7182%        0.2345        0.0000        0.0000
+q80          72.3897%        0.2388        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_toinc_3_rank_inc_toinc_yord_inc_toinc_3.gph saved
+Dominance test for alcohol_2018 using rank toinc_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+alcohol_2018toinc_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+alcohol_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of toinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.9420%        0.0228        0.0000
+q40          15.8988%        0.0552        0.0000
+q60          30.1478%        0.0982        0.0000
+q80          51.5159%        0.1563        0.0000
+-------------------------------------------------------
+
+Cummulative shares of alcohol_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           9.7923%        0.1124        0.0000        0.0000
+q40          24.5502%        0.1798        0.0000        0.0000
+q60          44.0502%        0.2331        0.0000        0.0000
+q80          68.1582%        0.2521        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_toinc_3_rank_inc_toinc_yord_inc_toinc_3.gph saved
+Dominance test for health_2018 using rank toinc_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+health_2018toinc_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+health_2018     5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of toinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.9420%        0.0228        0.0000
+q40          15.8988%        0.0552        0.0000
+q60          30.1478%        0.0982        0.0000
+q80          51.5159%        0.1563        0.0000
+-------------------------------------------------------
+
+Cummulative shares of health_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           4.6238%        0.0782        0.0000        0.0000
+q40          12.2182%        0.1632        0.0000        0.0000
+q60          24.6374%        0.2913        0.0000        0.0000
+q80          45.1238%        0.4666        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_toinc_3_rank_inc_toinc_yord_inc_toinc_3.gph saved
+Dominance test for tobacco_2018 using rank totex_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+tobacco_2018totex_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+tobacco_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of totex_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           6.6488%        0.0177        0.0000
+q40          17.6334%        0.0378        0.0000
+q60          33.0905%        0.0607        0.0000
+q80          55.3290%        0.0837        0.0000
+-------------------------------------------------------
+
+Cummulative shares of tobacco_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           8.7647%        0.0991        0.0000        0.0000
+q40          23.7172%        0.1704        0.0000        0.0000
+q60          44.1624%        0.2283        0.0000        0.0000
+q80          69.6860%        0.2439        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_totex_3_rank_exp_totex_yord_exp_totex_3.gph saved
+Dominance test for alcohol_2018 using rank totex_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+alcohol_2018totex_2018       5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+alcohol_2018    5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of totex_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           6.6488%        0.0177        0.0000
+q40          17.6334%        0.0378        0.0000
+q60          33.0905%        0.0607        0.0000
+q80          55.3290%        0.0837        0.0000
+-------------------------------------------------------
+
+Cummulative shares of alcohol_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           9.2056%        0.1069        0.0000        0.0000
+q40          23.3420%        0.1725        0.0000        0.0000
+q60          42.6246%        0.2292        0.0000        0.0000
+q80          66.9693%        0.2523        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_totex_3_rank_exp_totex_yord_exp_totex_3.gph saved
+Dominance test for health_2018 using rank totex_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+health_2018totex_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+health_2018     5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of totex_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           6.6488%        0.0177        0.0000
+q40          17.6334%        0.0378        0.0000
+q60          33.0905%        0.0607        0.0000
+q80          55.3290%        0.0837        0.0000
+-------------------------------------------------------
+
+Cummulative shares of health_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           4.0441%        0.0647        0.0000        0.0000
+q40          11.1277%        0.1449        0.0000        0.0000
+q60          22.6799%        0.2633        0.0000        0.0000
+q80          41.8787%        0.4348        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_totex_3_rank_exp_totex_yord_exp_totex_3.gph saved
+Dominance test for pctob_2018 using rank pcinc_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pctob_2018 pcinc_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pctob_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.6425%        0.0215        0.0000
+q40          14.9332%        0.0530        0.0000
+q60          28.5011%        0.0952        0.0000
+q80          49.2221%        0.1522        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pctob_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           9.1532%        0.0987        0.0000        0.0000
+q40          24.3872%        0.1880        0.0000        0.0000
+q60          44.9960%        0.2741        0.0000        0.0000
+q80          70.7892%        0.3205        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_pcinc_3_rank_inc_pcinc_yord_inc_pcinc_3.gph saved
+Dominance test for pcalc_2018 using rank pcinc_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pcalc_2018 pcinc_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pcalc_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.6425%        0.0215        0.0000
+q40          14.9332%        0.0530        0.0000
+q60          28.5011%        0.0952        0.0000
+q80          49.2221%        0.1522        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pcalc_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           8.2094%        0.0949        0.0000        0.0000
+q40          21.9340%        0.1849        0.0000        0.0000
+q60          41.2590%        0.2778        0.0000        0.0000
+q80          66.3682%        0.3417        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_pcinc_3_rank_inc_pcinc_yord_inc_pcinc_3.gph saved
+Dominance test for pchea_2018 using rank pcinc_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pchea_2018 pcinc_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pchea_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcinc_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           5.6425%        0.0215        0.0000
+q40          14.9332%        0.0530        0.0000
+q60          28.5011%        0.0952        0.0000
+q80          49.2221%        0.1522        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pchea_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           2.9989%        0.0555        0.0000        0.0000
+q40           9.1822%        0.1393        0.0000        0.0000
+q60          20.1173%        0.2794        0.0000        0.0000
+q80          39.7436%        0.4938        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_pcinc_3_rank_inc_pcinc_yord_inc_pcinc_3.gph saved
+Dominance test for pctob_2018 using rank pcexp_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pctob_2018 pcexp_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pctob_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcexp_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           6.4129%        0.0183        0.0000
+q40          16.6427%        0.0423        0.0000
+q60          31.2513%        0.0720        0.0000
+q80          52.7364%        0.1063        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pctob_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           7.9939%        0.0853        0.0000        0.0000
+q40          22.4779%        0.1743        0.0000        0.0000
+q60          43.1269%        0.2664        0.0000        0.0000
+q80          68.4937%        0.3244        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_tob_pcexp_3_rank_exp_pcexp_yord_exp_pcexp_3.gph saved
+Dominance test for pcalc_2018 using rank pcexp_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pcalc_2018 pcexp_2018        5%           19          mca
+
+    Concentration curve dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pcalc_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcexp_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           6.4129%        0.0183        0.0000
+q40          16.6427%        0.0423        0.0000
+q60          31.2513%        0.0720        0.0000
+q80          52.7364%        0.1063        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pcalc_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           7.3347%        0.0838        0.0000        0.0000
+q40          21.0934%        0.1762        0.0000        0.0000
+q60          40.0709%        0.2717        0.0000        0.0000
+q80          64.7823%        0.3441        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_alc_pcexp_3_rank_exp_pcexp_yord_exp_pcexp_3.gph saved
+Dominance test for pchea_2018 using rank pcexp_2018 for the year 2018
+Test of dominance between concentration curve and Lorenz curve
+
+Variable   Sort vbl.    Sign. level    # points       Rule
+------------------------------------------------------------
+
+pchea_2018 pcexp_2018        5%           19          mca
+
+    Lorenz dominates  
+
+
+Test of dominance between concentration curve and 45 degree line
+
+Variable   Sign. level    # points    Rule
+---------------------------------------------
+
+pchea_2018      5%           19        mca
+
+    45 degree dominates  
+
+
+Cummulative shares of pcexp_2018
+
+Quantile   Cumm. share    std. error      p-value
+-------------------------------------------------------
+
+q20           6.4129%        0.0183        0.0000
+q40          16.6427%        0.0423        0.0000
+q60          31.2513%        0.0720        0.0000
+q80          52.7364%        0.1063        0.0000
+-------------------------------------------------------
+
+Cummulative shares of pchea_2018
+
+Quantile   Cumm. share    std. error    Diff. from    Diff. from
+                                        pop. share    income share
+
+                                        p-value       p-value
+-----------------------------------------------------------------
+
+q20           2.5229%        0.0421        0.0000        0.0000
+q40           8.0076%        0.1166        0.0000        0.0000
+q60          17.8267%        0.2388        0.0000        0.0000
+q80          36.4970%        0.4518        0.0000        0.0000
+-----------------------------------------------------------------
+file 02_Figures/Supplementary_Figures\cc_yord_hea_pcexp_3_rank_exp_pcexp_yord_exp_pcexp_3.gph saved
+file 01_Intermediate_Extracts\tob_alc_health_final_concurve_2018.dta saved
+
+. 
+. // Combine in one graph
+. local cc_rank inc_toinc exp_totex inc_pcinc exp_pcexp
+
+. local cc_rank_short _toinc _totex _pcinc _pcexp
+
+. 
+. forvalues i = 1/4 {
+  2.         local cc_rank_name: word `i' of `cc_rank'
+  3.         local cc_shortrank: word `i' of `cc_rank_short'
+  4.         graph combine "02_Figures\Supplementary_Figures\cc_yord_tob`cc_shortrank'_1_rank_`cc_rank_name'_yord_`cc_rank_name'_1.gph" ///
+>         "02_Figures\Supplementary_Figures\cc_yord_tob`cc_shortrank'_2_rank_`cc_rank_name'_yord_`cc_rank_name'_2.gph" ///
+>         "02_Figures\Supplementary_Figures\cc_yord_tob`cc_shortrank'_3_rank_`cc_rank_name'_yord_`cc_rank_name'_3.gph" ///
+>         "02_Figures\Supplementary_Figures\cc_yord_alc`cc_shortrank'_1_rank_`cc_rank_name'_yord_`cc_rank_name'_1.gph" ///
+>         "02_Figures\Supplementary_Figures\cc_yord_alc`cc_shortrank'_2_rank_`cc_rank_name'_yord_`cc_rank_name'_2.gph" ///
+>         "02_Figures\Supplementary_Figures\cc_yord_alc`cc_shortrank'_3_rank_`cc_rank_name'_yord_`cc_rank_name'_3.gph" ///
+>         "02_Figures\Supplementary_Figures\cc_yord_hea`cc_shortrank'_1_rank_`cc_rank_name'_yord_`cc_rank_name'_1.gph" ///
+>         "02_Figures\Supplementary_Figures\cc_yord_hea`cc_shortrank'_2_rank_`cc_rank_name'_yord_`cc_rank_name'_2.gph" ///
+>         "02_Figures\Supplementary_Figures\cc_yord_hea`cc_shortrank'_3_rank_`cc_rank_name'_yord_`cc_rank_name'_3.gph", ///
+>         rows(3) ycommon xcommon iscale(0.45) saving("02_Figures\Supplementary_Figures\cc_`cc_rank_name'.gph", replace)
+  5. graph export "02_Figures\Supplementary_Figures\cc_`cc_rank_name'.tif", replace
+  6. }
+file 02_Figures\Supplementary_Figures\cc_inc_toinc.gph saved
+file 02_Figures\Supplementary_Figures\cc_inc_toinc.tif saved as TIFF format
+file 02_Figures\Supplementary_Figures\cc_exp_totex.gph saved
+file 02_Figures\Supplementary_Figures\cc_exp_totex.tif saved as TIFF format
+file 02_Figures\Supplementary_Figures\cc_inc_pcinc.gph saved
+file 02_Figures\Supplementary_Figures\cc_inc_pcinc.tif saved as TIFF format
+file 02_Figures\Supplementary_Figures\cc_exp_pcexp.gph saved
+file 02_Figures\Supplementary_Figures\cc_exp_pcexp.tif saved as TIFF format
+
+. 
+. 
+. **** The next set of dominance tests compares 2012 vs 2015 and 2015 and 2018 in the same expenditure group
+. // The curves per expenditure category have already been made above
+. // We just need to run the pairwise dominance tests
+. // Load 2012 into memory
+. use "01_Intermediate_Extracts\tob_alc_health_final_concurve_2012.dta", clear
+
+. local filenames " "01_Intermediate_Extracts/tob_alc_health_final_concurve_2015.dta" "01_Intermediate_Extracts/tob_alc_health_final_concurve_2018.dta" "
+
+. local year2 2015 2018
+
+. // 2012 vs. 2015
+. forvalues h = 1/2 {
+  2.         local filename_using: word `h' of `filenames'
+  3.         local year: word `h' of `year2'
+  4.         // Ranking by total household income and total household expenditure
+.         forvalues i = 1/2 {
+  5.                 local rankvar: word `i' of `rank_varlist_tot'
+  6.                 forvalues j = 1/3 {
+  7.                         local longname: word `j' of `expense_name'
+  8.                         di "Dominance test for `longname'_2018 using rank `rankvar' for the year `year' vs 2012"
+  9.                         dominance `longname'_2018 [aw = weight] using "`filename_using'", /// 
+>                         sortvar(`rankvar') labels(2012 `year')
+ 10.                 }
+ 11.         }
+ 12.         // Ranking by per capita household income and household expenditure
+.         forvalues i = 1/2 {
+ 13.                 local rankvar: word `i' of `rank_varlist_pc'
+ 14.                 forvalues j = 1/3 {
+ 15.                         local shortname: word `j' of `exp_name'
+ 16.                         di "Dominance test for pc`shortname'_2018 using rank `rankvar' for the year `year' vs 2012"
+ 17.                         dominance pc`shortname'_2018 [aw = weight] using "`filename_using'", ///
+>                         sortvar(`rankvar') labels(2012 `year')
+ 18.                 }
+ 19.         }
+ 20. }
+Dominance test for tobacco_2018 using rank toinc_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of tobacco_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    non-dominance  
+Dominance test for alcohol_2018 using rank toinc_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of alcohol_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    non-dominance  
+Dominance test for health_2018 using rank toinc_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of health_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    2015 dominates 2012  
+Dominance test for tobacco_2018 using rank totex_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of tobacco_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    2015 dominates 2012  
+Dominance test for alcohol_2018 using rank totex_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of alcohol_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    non-dominance  
+Dominance test for health_2018 using rank totex_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of health_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    2015 dominates 2012  
+Dominance test for pctob_2018 using rank pcinc_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of pctob_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    non-dominance  
+Dominance test for pcalc_2018 using rank pcinc_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of pcalc_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    non-dominance  
+Dominance test for pchea_2018 using rank pcinc_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of pchea_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    non-dominance  
+Dominance test for pctob_2018 using rank pcexp_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of pctob_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    non-dominance  
+Dominance test for pcalc_2018 using rank pcexp_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of pcalc_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    non-dominance  
+Dominance test for pchea_2018 using rank pcexp_2018 for the year 2015 vs 2012
+Test of dominance between concentration curves of pchea_2018 for 2012 and 2015
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2015              5%           19          mca
+
+    non-dominance  
+Dominance test for tobacco_2018 using rank toinc_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of tobacco_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    2012 dominates 2018  
+Dominance test for alcohol_2018 using rank toinc_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of alcohol_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    non-dominance  
+Dominance test for health_2018 using rank toinc_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of health_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    2018 dominates 2012  
+Dominance test for tobacco_2018 using rank totex_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of tobacco_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    2012 dominates 2018  
+Dominance test for alcohol_2018 using rank totex_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of alcohol_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    non-dominance  
+Dominance test for health_2018 using rank totex_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of health_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    2018 dominates 2012  
+Dominance test for pctob_2018 using rank pcinc_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of pctob_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    2012 dominates 2018  
+Dominance test for pcalc_2018 using rank pcinc_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of pcalc_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    non-dominance  
+Dominance test for pchea_2018 using rank pcinc_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of pchea_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    2018 dominates 2012  
+Dominance test for pctob_2018 using rank pcexp_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of pctob_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    2012 dominates 2018  
+Dominance test for pcalc_2018 using rank pcexp_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of pcalc_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    non-dominance  
+Dominance test for pchea_2018 using rank pcexp_2018 for the year 2018 vs 2012
+Test of dominance between concentration curves of pchea_2018 for 2012 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2012       2018              5%           19          mca
+
+    2018 dominates 2012  
+
+. // Load 2015 into memory
+. use "01_Intermediate_Extracts\tob_alc_health_final_concurve_2015.dta", clear
+
+. // Ranking by total household income and total household expenditure
+. forvalues i = 1/2 {
+  2.         local rankvar: word `i' of `rank_varlist_tot'
+  3.         forvalues j = 1/3 {
+  4.                 local longname: word `j' of `expense_name'
+  5.                 di "Dominance test for `longname'_2018 using rank `rankvar' for the year `year'"
+  6.                 dominance `longname'_2018 [aw = weight] using "01_Intermediate_Extracts/tob_alc_health_final_concurve_2018.dta", /// 
+>                 sortvar(`rankvar') labels(2015 `year')
+  7.         }
+  8. }
+Dominance test for tobacco_2018 using rank toinc_2018 for the year 2018
+Test of dominance between concentration curves of tobacco_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2015 dominates 2018  
+Dominance test for alcohol_2018 using rank toinc_2018 for the year 2018
+Test of dominance between concentration curves of alcohol_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2015 dominates 2018  
+Dominance test for health_2018 using rank toinc_2018 for the year 2018
+Test of dominance between concentration curves of health_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2018 dominates 2015  
+Dominance test for tobacco_2018 using rank totex_2018 for the year 2018
+Test of dominance between concentration curves of tobacco_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2015 dominates 2018  
+Dominance test for alcohol_2018 using rank totex_2018 for the year 2018
+Test of dominance between concentration curves of alcohol_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2015 dominates 2018  
+Dominance test for health_2018 using rank totex_2018 for the year 2018
+Test of dominance between concentration curves of health_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2018 dominates 2015  
+
+. // Ranking by per capita household income and household expenditure
+. forvalues i = 1/2 {
+  2.         local rankvar: word `i' of `rank_varlist_pc'
+  3.         forvalues j = 1/3 {
+  4.                 local shortname: word `j' of `exp_name'
+  5.                 di "Dominance test for pc`shortname'_2018 using rank `rankvar' for the year 2018 vs 2015"
+  6.                 dominance pc`shortname'_2018 [aw = weight] using "01_Intermediate_Extracts/tob_alc_health_final_concurve_2018.dta", ///
+>                 sortvar(`rankvar') labels(2015 2018)
+  7.         }
+  8. }
+Dominance test for pctob_2018 using rank pcinc_2018 for the year 2018 vs 2015
+Test of dominance between concentration curves of pctob_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2015 dominates 2018  
+Dominance test for pcalc_2018 using rank pcinc_2018 for the year 2018 vs 2015
+Test of dominance between concentration curves of pcalc_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2015 dominates 2018  
+Dominance test for pchea_2018 using rank pcinc_2018 for the year 2018 vs 2015
+Test of dominance between concentration curves of pchea_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2018 dominates 2015  
+Dominance test for pctob_2018 using rank pcexp_2018 for the year 2018 vs 2015
+Test of dominance between concentration curves of pctob_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2015 dominates 2018  
+Dominance test for pcalc_2018 using rank pcexp_2018 for the year 2018 vs 2015
+Test of dominance between concentration curves of pcalc_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2015 dominates 2018  
+Dominance test for pchea_2018 using rank pcexp_2018 for the year 2018 vs 2015
+Test of dominance between concentration curves of pchea_2018 for 2015 and 2018
+
+Data 1     Data 2       Sign. level    # points       Rule
+------------------------------------------------------------
+
+2015       2018              5%           19          mca
+
+    2018 dominates 2015  
+
+. *************************************************************************************
+. 
+. 
+. 
+. 
+. *************************************************************************************
+. ******** Concentration index
+. // The concentration index can be estimated from the regression
+. // 2*sigma_rank^2 (health / mean health) = constant + concentration index * rank + error
+. // Retrieve the beta coefficient of rank to get the POINT estimate of the concentration index
+. // For standard error, we may take the standard error of the beta coefficient but does not take account
+. // the sampling variability of the estimate of the mean of the health variable.
+. // To take into account the sampling variability of the mean of the health variable, use nlcom.
+. // Consider also Newey-West regression to account for lag 1 autocorrelation as a function of the ranking
+. 
+. **** Generate a program that will calculate concentration indices
+. capture program drop conc_index
+
+. program define conc_index
+  1.         syntax varlist (min = 4 max = 4) [fweight] using, year(integer)
+  2.         use `using', clear
+  3.         local outcome: word 1 of `varlist'
+  4.         local rank: word 2 of `varlist'
+  5.         local psu: word 3 of `varlist'
+  6.         local prob_weight: word 4 of `varlist'
+  7.         // Calculate the mean of the outcome and store in scalar mean
+.         qui sum `outcome' [`weight'`exp']
+  8.         local mean = r(mean)
+  9.         // Calculate the variance of the rank and store in scalar v_rank
+.         qui sum `rank' [`weight'`exp']
+ 10.         local v_rank = r(Var)
+ 11.         // Generate left hand side of regression
+.         tempvar lhs 
+ 12.         gen `lhs' = 2 * `v_rank' * (`outcome'/`mean')
+ 13.         // Regress 
+.         qui svy: regr `lhs' `rank'
+ 14.         // Retrieve coefficient - this is the concentration index point estimate
+.         local c = _b[`rank']
+ 15.         local c_se = _se[`rank']
+ 16.         local c_upper = _b[`rank'] + abs(invnormal(0.025))*`c_se'
+ 17.         local c_lower = _b[`rank'] - abs(invnormal(0.025))*`c_se'
+ 18.         local c_pval = 1 - normal(`c'/`c_se')
+ 19.         // SE adjusted for variability of mean of health variable
+.         qui svy: regr `outcome' `rank'
+ 20.         qui nlcom ((2 *`v_rank')/(_b[_cons] + 0.5* _b[`rank'])) * _b[`rank']
+ 21.         local c_se_adj = sqrt(r(V)[1,1])
+ 22.         local c_upper_adj = r(b)[1,1] + abs(invnormal(0.025))*`c_se_adj'
+ 23.         local c_lower_adj = r(b)[1,1] - abs(invnormal(0.025))*`c_se_adj'
+ 24.         local c_pval_adj = 1 - normal(r(b)[1,1]/`c_se_adj')
+ 25.         // Newey-West regression to account for serial correlation
+.         tempvar ranki
+ 26.         egen `ranki' = rank(`rank'), unique
+ 27.         qui tsset `ranki'
+ 28.         qui newey `outcome' `rank' [aw = `prob_weight'], lag(1)
+ 29.         qui nlcom ((2 *`v_rank')/(_b[_cons] + 0.5* _b[`rank'])) * _b[`rank']
+ 30.         local c_se_newey = sqrt(r(V)[1,1])
+ 31.         local c_upper_newey = r(b)[1,1] + abs(invnormal(0.025))*`c_se_newey'
+ 32.         local c_lower_newey = r(b)[1,1] - abs(invnormal(0.025))*`c_se_newey'
+ 33.         local c_pval_newey = 1 - normal(r(b)[1,1]/`c_se_newey')
+ 34.         // Display all the results
+.         di as text _dup(100) "="
+ 35.         di "The concentration index point estimate of `outcome' in `year' is " %6.5f `c'
+ 36.         di " "
+ 37.         di "Method" _col(50) "SE" _col(60)      "p-value" _col(70) "Lower 95% CI" _col(85) "Upper 95% CI"
+ 38.         di as text _dup(100) "-"
+ 39.         di "Unadjusted for variance of health variable" _col(50) %6.5f `c_se' _col(60) %4.3f `c_pval' _col(70) %6.5f `c_lower' _col(85) %6.5f `c_upper'
+ 40.         di "Adjusted for variance of health variable" _col(50) %6.5f `c_se_adj' _col(60) %4.3f `c_pval_adj' _col(70) %6.5f `c_lower_adj' _col(85) %6.5f `c_
+> upper_adj'
+ 41.         di "Newey-West, autocorrelation lag (1)" _col(50) %6.5f `c_se_newey' _col(60) %4.3f `c_pval_newey' _col(70) %6.5f `c_lower_newey' _col(85) %6.5f `c
+> _upper_newey'
+ 42.         di as text _dup(100) "="
+ 43. end
+
+. // Sample code conc_index tobacco_2018 rank_inc psu weight [fweight = fweight] using "01_Intermediate_Extracts\tob_alc_health_final_concurve_2012.dta", year(2
+> 012)
+. 
+. 
+. **** Run commands to generate concentration index point estimate and SE
+. // Ranking by total household income and total household expenditure
+. // Tobacco, alcohol, health expenditure
+. forvalues h = 1/3 {
+  2.         local year_name: word `h' of `surveyyear'
+  3.         forvalues i = 1/2 {
+  4.                 local rank_name: word `i' of `rank_var_short1'
+  5.                 forvalues j = 1/3 {
+  6.                         local outcome_name: word `j' of `expense_name'
+  7.                         di "Ranking variable: `rank_name'"
+  8.                         conc_index `outcome_name'_2018 rank_`rank_name' psu weight [fweight = fweight] using "01_Intermediate_Extracts\tob_alc_health_final
+> _concurve_`year_name'.dta", year(`year_name')
+  9.                         di " "
+ 10.                 } 
+ 11.         }
+ 12. }
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of tobacco_2018 in 2012 is 0.15120
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00750   0.000     0.13649        0.16591
+Adjusted for variance of health variable         0.00656   0.000     0.13836        0.16405
+Newey-West, autocorrelation lag (1)              0.00532   0.000     0.14078        0.16162
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of alcohol_2018 in 2012 is 0.22171
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00857   0.000     0.20491        0.23851
+Adjusted for variance of health variable         0.00704   0.000     0.20793        0.23550
+Newey-West, autocorrelation lag (1)              0.00584   0.000     0.21027        0.23316
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of health_2018 in 2012 is 0.54053
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.02271   0.000     0.49602        0.58504
+Adjusted for variance of health variable         0.01021   0.000     0.52054        0.56058
+Newey-West, autocorrelation lag (1)              0.00916   0.000     0.52260        0.55851
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of tobacco_2018 in 2012 is 0.17269
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00764   0.000     0.15771        0.18767
+Adjusted for variance of health variable         0.00646   0.000     0.16003        0.18535
+Newey-West, autocorrelation lag (1)              0.00526   0.000     0.16238        0.18300
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of alcohol_2018 in 2012 is 0.23335
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00873   0.000     0.21625        0.25045
+Adjusted for variance of health variable         0.00698   0.000     0.21968        0.24702
+Newey-West, autocorrelation lag (1)              0.00580   0.000     0.22198        0.24473
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of health_2018 in 2012 is 0.58520
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.02396   0.000     0.53825        0.63216
+Adjusted for variance of health variable         0.01042   0.000     0.56481        0.60566
+Newey-West, autocorrelation lag (1)              0.00915   0.000     0.56731        0.60316
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of tobacco_2018 in 2015 is 0.13281
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00692   0.000     0.11926        0.14636
+Adjusted for variance of health variable         0.00625   0.000     0.12056        0.14507
+Newey-West, autocorrelation lag (1)              0.00500   0.000     0.12302        0.14260
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of alcohol_2018 in 2015 is 0.20487
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00783   0.000     0.18954        0.22021
+Adjusted for variance of health variable         0.00667   0.000     0.19181        0.21795
+Newey-West, autocorrelation lag (1)              0.00565   0.000     0.19380        0.21595
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of health_2018 in 2015 is 0.51208
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.01912   0.000     0.47461        0.54955
+Adjusted for variance of health variable         0.00956   0.000     0.49337        0.53083
+Newey-West, autocorrelation lag (1)              0.00892   0.000     0.49461        0.52959
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of tobacco_2018 in 2015 is 0.15255
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00683   0.000     0.13916        0.16595
+Adjusted for variance of health variable         0.00599   0.000     0.14082        0.16429
+Newey-West, autocorrelation lag (1)              0.00486   0.000     0.14302        0.16209
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of alcohol_2018 in 2015 is 0.21614
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00797   0.000     0.20053        0.23176
+Adjusted for variance of health variable         0.00664   0.000     0.20314        0.22915
+Newey-West, autocorrelation lag (1)              0.00546   0.000     0.20544        0.22686
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of health_2018 in 2015 is 0.55909
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.01987   0.000     0.52016        0.59803
+Adjusted for variance of health variable         0.00935   0.000     0.54079        0.57745
+Newey-West, autocorrelation lag (1)              0.00859   0.000     0.54228        0.57595
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of tobacco_2018 in 2018 is 0.18856
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00531   0.000     0.17816        0.19897
+Adjusted for variance of health variable         0.00420   0.000     0.18033        0.19679
+Newey-West, autocorrelation lag (1)              0.00375   0.000     0.18122        0.19591
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of alcohol_2018 in 2018 is 0.22494
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00589   0.000     0.21340        0.23647
+Adjusted for variance of health variable         0.00459   0.000     0.21594        0.23394
+Newey-West, autocorrelation lag (1)              0.00408   0.000     0.21695        0.23293
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of health_2018 in 2018 is 0.48844
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.01644   0.000     0.45622        0.52066
+Adjusted for variance of health variable         0.00820   0.000     0.47237        0.50453
+Newey-West, autocorrelation lag (1)              0.00752   0.000     0.47371        0.50319
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of tobacco_2018 in 2018 is 0.22344
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00566   0.000     0.21236        0.23453
+Adjusted for variance of health variable         0.00420   0.000     0.21521        0.23168
+Newey-West, autocorrelation lag (1)              0.00368   0.000     0.21624        0.23065
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of alcohol_2018 in 2018 is 0.24430
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00613   0.000     0.23229        0.25631
+Adjusted for variance of health variable         0.00464   0.000     0.23521        0.25340
+Newey-West, autocorrelation lag (1)              0.00407   0.000     0.23634        0.25227
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of health_2018 in 2018 is 0.52577
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.01707   0.000     0.49230        0.55923
+Adjusted for variance of health variable         0.00810   0.000     0.50989        0.54166
+Newey-West, autocorrelation lag (1)              0.00748   0.000     0.51111        0.54044
+====================================================================================================
+ 
+
+. // Household income and expenditure
+. forvalues h = 1/3 {
+  2.         local year_name: word `h' of `surveyyear'
+  3.         forvalues i = 1/2 {
+  4.                 local rank_name: word `i' of `rank_var_short1'
+  5.                 local outcome_name: word `i' of `rank_varlist_tot'
+  6.                 di "Ranking variable: `rank_name'"
+  7.                 conc_index `outcome_name' rank_`rank_name' psu weight [fweight = fweight] using "01_Intermediate_Extracts\tob_alc_health_final_concurve_`ye
+> ar_name'.dta", year(`year_name')
+  8.                 di " "
+  9.         }
+ 10. }
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of toinc_2018 in 2012 is 0.46173
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00884   0.000     0.44441        0.47905
+Adjusted for variance of health variable         0.00526   0.000     0.45144        0.47205
+Newey-West, autocorrelation lag (1)              0.00387   0.000     0.45417        0.46933
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of totex_2018 in 2012 is 0.42140
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00672   0.000     0.40823        0.43458
+Adjusted for variance of health variable         0.00424   0.000     0.41310        0.42974
+Newey-West, autocorrelation lag (1)              0.00310   0.000     0.41535        0.42749
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of toinc_2018 in 2015 is 0.44409
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00598   0.000     0.43236        0.45581
+Adjusted for variance of health variable         0.00393   0.000     0.43639        0.45182
+Newey-West, autocorrelation lag (1)              0.00364   0.000     0.43696        0.45124
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of totex_2018 in 2015 is 0.40484
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00498   0.000     0.39507        0.41461
+Adjusted for variance of health variable         0.00335   0.000     0.39829        0.41142
+Newey-West, autocorrelation lag (1)              0.00279   0.000     0.39938        0.41033
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+====================================================================================================
+The concentration index point estimate of toinc_2018 in 2018 is 0.41919
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00440   0.000     0.41057        0.42781
+Adjusted for variance of health variable         0.00274   0.000     0.41383        0.42456
+Newey-West, autocorrelation lag (1)              0.00259   0.000     0.41412        0.42426
+====================================================================================================
+ 
+Ranking variable: exp_totex
+====================================================================================================
+The concentration index point estimate of totex_2018 in 2018 is 0.37656
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00329   0.000     0.37012        0.38301
+Adjusted for variance of health variable         0.00215   0.000     0.37236        0.38078
+Newey-West, autocorrelation lag (1)              0.00170   0.000     0.37325        0.37989
+====================================================================================================
+ 
+
+. // Ranking by per capita household income and household expenditure
+. // Tobacco, alcohol, health expenditure
+. forvalues h = 1/3 {
+  2.         local year_name: word `h' of `surveyyear'
+  3.         forvalues i = 1/2 {
+  4.                 local rank_name: word `i' of `rank_var_short3'
+  5.                 forvalues j = 1/3 {
+  6.                         local outcome_name: word `j' of `exp_name'
+  7.                         di "Ranking variable: `rank_name'"
+  8.                         conc_index pc`outcome_name'_2018 rank_`rank_name' psu weight [fweight = fweight] using "01_Intermediate_Extracts\tob_alc_health_fin
+> al_concurve_`year_name'.dta", year(`year_name')
+  9.                         di " "
+ 10.                 } 
+ 11.         }
+ 12. }
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pctob_2018 in 2012 is 0.15825
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00908   0.000     0.14046        0.17605
+Adjusted for variance of health variable         0.00771   0.000     0.14314        0.17337
+Newey-West, autocorrelation lag (1)              0.00622   0.000     0.14606        0.17045
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pcalc_2018 in 2012 is 0.25756
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.01031   0.000     0.23735        0.27777
+Adjusted for variance of health variable         0.00764   0.000     0.24259        0.27254
+Newey-West, autocorrelation lag (1)              0.00669   0.000     0.24445        0.27068
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pchea_2018 in 2012 is 0.58818
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.02584   0.000     0.53753        0.63883
+Adjusted for variance of health variable         0.01078   0.000     0.56709        0.60933
+Newey-West, autocorrelation lag (1)              0.01037   0.000     0.56788        0.60855
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pctob_2018 in 2012 is 0.17975
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00937   0.000     0.16139        0.19812
+Adjusted for variance of health variable         0.00770   0.000     0.16467        0.19484
+Newey-West, autocorrelation lag (1)              0.00627   0.000     0.16747        0.19204
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pcalc_2018 in 2012 is 0.27074
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.01068   0.000     0.24982        0.29167
+Adjusted for variance of health variable         0.00769   0.000     0.25568        0.28581
+Newey-West, autocorrelation lag (1)              0.00669   0.000     0.25763        0.28387
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pchea_2018 in 2012 is 0.63107
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.02684   0.000     0.57847        0.68368
+Adjusted for variance of health variable         0.01096   0.000     0.60963        0.65258
+Newey-West, autocorrelation lag (1)              0.00970   0.000     0.61210        0.65012
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pctob_2018 in 2015 is 0.14998
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00834   0.000     0.13364        0.16632
+Adjusted for variance of health variable         0.00718   0.000     0.13590        0.16406
+Newey-West, autocorrelation lag (1)              0.00603   0.000     0.13817        0.16179
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pcalc_2018 in 2015 is 0.23722
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00975   0.000     0.21810        0.25633
+Adjusted for variance of health variable         0.00765   0.000     0.22223        0.25221
+Newey-West, autocorrelation lag (1)              0.00698   0.000     0.22355        0.25089
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pchea_2018 in 2015 is 0.58074
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.02383   0.000     0.53403        0.62745
+Adjusted for variance of health variable         0.01066   0.000     0.55987        0.60167
+Newey-West, autocorrelation lag (1)              0.00976   0.000     0.56164        0.59989
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pctob_2018 in 2015 is 0.17032
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00850   0.000     0.15367        0.18698
+Adjusted for variance of health variable         0.00709   0.000     0.15642        0.18423
+Newey-West, autocorrelation lag (1)              0.00601   0.000     0.15854        0.18212
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pcalc_2018 in 2015 is 0.25021
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00993   0.000     0.23074        0.26967
+Adjusted for variance of health variable         0.00758   0.000     0.23535        0.26507
+Newey-West, autocorrelation lag (1)              0.00681   0.000     0.23687        0.26355
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pchea_2018 in 2015 is 0.62472
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.02436   0.000     0.57699        0.67246
+Adjusted for variance of health variable         0.01045   0.000     0.60427        0.64524
+Newey-West, autocorrelation lag (1)              0.00918   0.000     0.60676        0.64275
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pctob_2018 in 2018 is 0.21089
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00695   0.000     0.19726        0.22452
+Adjusted for variance of health variable         0.00523   0.000     0.20064        0.22115
+Newey-West, autocorrelation lag (1)              0.00484   0.000     0.20141        0.22037
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pcalc_2018 in 2018 is 0.26276
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00823   0.000     0.24662        0.27890
+Adjusted for variance of health variable         0.00589   0.000     0.25122        0.27430
+Newey-West, autocorrelation lag (1)              0.00548   0.000     0.25203        0.27350
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pchea_2018 in 2018 is 0.55827
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.01890   0.000     0.52124        0.59531
+Adjusted for variance of health variable         0.00827   0.000     0.54208        0.57449
+Newey-West, autocorrelation lag (1)              0.00763   0.000     0.54333        0.57324
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pctob_2018 in 2018 is 0.24385
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00742   0.000     0.22930        0.25840
+Adjusted for variance of health variable         0.00531   0.000     0.23344        0.25426
+Newey-West, autocorrelation lag (1)              0.00484   0.000     0.23436        0.25334
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pcalc_2018 in 2018 is 0.28181
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00851   0.000     0.26514        0.29848
+Adjusted for variance of health variable         0.00591   0.000     0.27022        0.29340
+Newey-West, autocorrelation lag (1)              0.00540   0.000     0.27122        0.29240
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pchea_2018 in 2018 is 0.59577
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.01936   0.000     0.55782        0.63371
+Adjusted for variance of health variable         0.00800   0.000     0.58010        0.61146
+Newey-West, autocorrelation lag (1)              0.00740   0.000     0.58128        0.61028
+====================================================================================================
+ 
+
+. // Household income and expenditure
+. forvalues h = 1/3 {
+  2.         local year_name: word `h' of `surveyyear'
+  3.         forvalues i = 1/2 {
+  4.                 local rank_name: word `i' of `rank_var_short3'
+  5.                 local outcome_name: word `i' of `rank_varlist_pc'
+  6.                 di "Ranking variable: `rank_name'"
+  7.                 conc_index `outcome_name' rank_`rank_name' psu weight [fweight = fweight] using "01_Intermediate_Extracts\tob_alc_health_final_concurve_`ye
+> ar_name'.dta", year(`year_name')
+  8.                 di " "
+  9.         }
+ 10. }
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pcinc_2018 in 2012 is 0.48388
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.01130   0.000     0.46172        0.50604
+Adjusted for variance of health variable         0.00641   0.000     0.47134        0.49647
+Newey-West, autocorrelation lag (1)              0.00468   0.000     0.47472        0.49308
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pcexp_2018 in 2012 is 0.44250
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00826   0.000     0.42631        0.45870
+Adjusted for variance of health variable         0.00508   0.000     0.43256        0.45248
+Newey-West, autocorrelation lag (1)              0.00357   0.000     0.43551        0.44952
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pcinc_2018 in 2015 is 0.46525
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00799   0.000     0.44959        0.48091
+Adjusted for variance of health variable         0.00499   0.000     0.45550        0.47505
+Newey-West, autocorrelation lag (1)              0.00430   0.000     0.45684        0.47370
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pcexp_2018 in 2015 is 0.42665
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00719   0.000     0.41256        0.44075
+Adjusted for variance of health variable         0.00462   0.000     0.41761        0.43573
+Newey-West, autocorrelation lag (1)              0.00364   0.000     0.41954        0.43380
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+====================================================================================================
+The concentration index point estimate of pcinc_2018 in 2018 is 0.44390
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00492   0.000     0.43426        0.45354
+Adjusted for variance of health variable         0.00296   0.000     0.43810        0.44972
+Newey-West, autocorrelation lag (1)              0.00258   0.000     0.43885        0.44896
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+====================================================================================================
+The concentration index point estimate of pcexp_2018 in 2018 is 0.40339
+ 
+Method                                           SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+Unadjusted for variance of health variable       0.00444   0.000     0.39468        0.41210
+Adjusted for variance of health variable         0.00278   0.000     0.39794        0.40884
+Newey-West, autocorrelation lag (1)              0.00211   0.000     0.39926        0.40753
+====================================================================================================
+ 
+
+. 
+. 
+. *************************************************************************************
+. **** Sensitivity analysis using household expenditure
+. // The regression is: 2*sigma_rerank^2 (health / mean health) = constant + gamma * rerank + error
+. // where rerank = rank_1i - rank_2i and gamma is the difference in concentration indices (CI_1 - CI_2)
+. // Rank 1 is income, Rank 2 is expenditure
+. capture program drop conc_index_sensi
+
+. program define conc_index_sensi
+  1.         syntax varlist (min = 5 max = 5) [fweight] using/, year(integer)
+  2.         use `using', clear
+  3.         local outcome: word 1 of `varlist'
+  4.         local rank1: word 2 of `varlist'
+  5.         local rank2: word 3 of `varlist'
+  6.         local psu: word 4 of `varlist'
+  7.         local prob_weight: word 5 of `varlist'
+  8.         // Calculate the mean of the outcome and store in scalar mean
+.         qui sum `outcome' [`weight'`exp']
+  9.         local mean = r(mean)
+ 10.         // Create a new variable rerank
+.         tempvar rerank
+ 11.         gen `rerank' = `rank1' - `rank2'
+ 12.         // Calculate the variance of the rerank and store in scalar v_rerank
+.         qui sum `rerank' [`weight'`exp']
+ 13.         local v_rerank = r(Var)
+ 14.         // Generate left hand side of regression
+.         tempvar lhs 
+ 15.         gen `lhs' = 2 * `v_rerank' * (`outcome'/`mean')
+ 16.         // Regress 
+.         qui svy: regr `lhs' `rerank'
+ 17.         local gamma_est = _b[`rerank']
+ 18.         local gamma_se = _se[`rerank']
+ 19.         // There is no transformation that accounts for the variability of the health variable
+.         // If the p-value is too low anyway, any additional variability of the health variable will increase the p-value but not by much
+.         local gamma_upper = `gamma_est' + abs(invnormal(0.025))*`gamma_se'
+ 20.         local gamma_lower = `gamma_est' - abs(invnormal(0.025))*`gamma_se'
+ 21.         local gamma_est_p = normal(`gamma_est'/`gamma_se')
+ 22.         // Generate the point estimates of the concentration indices
+.         forvalues i = 1/2 {
+ 23.                 // Calculate the variance of rank and store in scalar v_rank
+.                 qui sum `rank`i'' [`weight'`exp']
+ 24.                 local v_rank`i' = r(Var)
+ 25.                 // Generate left hand side of regression of rank
+.                 tempvar lhs_rank`i'
+ 26.                 gen `lhs_rank`i'' = 2 * `v_rank`i'' * (`outcome'/`mean')
+ 27.                 // Regress and retrieve concentration index of rank
+.                 qui svy: regr `lhs_rank`i'' `rank`i''
+ 28.                 local c_rank`i' = _b[`rank`i'']
+ 29.         }
+ 30.         // Display all the results
+.         di as text _dup(100) "="
+ 31.         di "`outcome'" " for the year " `year'
+ 32.         di " "
+ 33.         di "CIndex Income" _col(20) "CIndex Expenditure" _col(40) "Diff" _col(50) "SE" _col(60) "p-value" _col(70) "Lower 95% CI" _col(85) "Upper 95% CI"
+ 34.         di as text _dup(100) "-"
+ 35.         di %6.5f `c_rank1' _col(20) %6.5f `c_rank2' _col(40) %6.5f `gamma_est' _col(50) %6.5f `gamma_se' _col(60) %4.3f `gamma_est_p' _col(70) %6.5f `gamma
+> _lower' _col(85) `gamma_upper'
+ 36.         di as text _dup(100) "="
+ 37. end
+
+. // Sample code conc_index_sensi tobacco_2018 rank_inc rank_exp psu weight [fweight = fweight] using "01_Intermediate_Extracts\tob_alc_health_final_concurve_20
+> 12.dta", year(2012)
+. 
+. 
+. **** Run commands to generate concentration index point estimate and SE
+. // Ranking by total household income and total household expenditure
+. forvalues h = 1/3 {
+  2.         local year_name: word `h' of `surveyyear'
+  3.         local rank_name1: word 1 of `rank_var_short1'
+  4.         local rank_name2: word 2 of `rank_var_short1'
+  5.         forvalues j = 1/3 {
+  6.                 local outcome_name: word `j' of `expense_name'
+  7.                 di "Ranking variables: `rank_name1' vs `rank_name2'"
+  8.                 conc_index_sensi `outcome_name'_2018 rank_`rank_name1' rank_`rank_name2' psu weight [fweight = fweight] using "01_Intermediate_Extracts\tob
+> _alc_health_final_concurve_`year_name'.dta", year(`year_name')
+  9.                 di " "
+ 10.         }
+ 11. }
+Ranking variables: inc_toinc vs exp_totex
+====================================================================================================
+tobacco_2018 for the year 2012
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.15120            0.17269             -0.02149  0.00186   0.000     -0.02514       -.01783271
+====================================================================================================
+ 
+Ranking variables: inc_toinc vs exp_totex
+====================================================================================================
+alcohol_2018 for the year 2012
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.22171            0.23335             -0.01164  0.00196   0.000     -0.01548       -.00779788
+====================================================================================================
+ 
+Ranking variables: inc_toinc vs exp_totex
+====================================================================================================
+health_2018 for the year 2012
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.54053            0.58520             -0.04467  0.00357   0.000     -0.05166       -.03768407
+====================================================================================================
+ 
+Ranking variables: inc_toinc vs exp_totex
+====================================================================================================
+tobacco_2018 for the year 2015
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.13281            0.15255             -0.01974  0.00222   0.000     -0.02409       -.01539982
+====================================================================================================
+ 
+Ranking variables: inc_toinc vs exp_totex
+====================================================================================================
+alcohol_2018 for the year 2015
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.20487            0.21614             -0.01127  0.00218   0.000     -0.01555       -.00699187
+====================================================================================================
+ 
+Ranking variables: inc_toinc vs exp_totex
+====================================================================================================
+health_2018 for the year 2015
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.51208            0.55909             -0.04701  0.00366   0.000     -0.05419       -.03984284
+====================================================================================================
+ 
+Ranking variables: inc_toinc vs exp_totex
+====================================================================================================
+tobacco_2018 for the year 2018
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.18856            0.22344             -0.03488  0.00161   0.000     -0.03805       -.03171712
+====================================================================================================
+ 
+Ranking variables: inc_toinc vs exp_totex
+====================================================================================================
+alcohol_2018 for the year 2018
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.22494            0.24430             -0.01937  0.00152   0.000     -0.02235       -.01638311
+====================================================================================================
+ 
+Ranking variables: inc_toinc vs exp_totex
+====================================================================================================
+health_2018 for the year 2018
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.48844            0.52577             -0.03733  0.00208   0.000     -0.04140       -.03325166
+====================================================================================================
+ 
+
+. // Ranking by per capita household income and household expenditure
+. forvalues h = 1/3 {
+  2.         local year_name: word `h' of `surveyyear'
+  3.         local rank_name1: word 1 of `rank_var_short3'
+  4.         local rank_name2: word 2 of `rank_var_short3'
+  5.         forvalues j = 1/3 {
+  6.                 local outcome_name: word `j' of `exp_name'
+  7.                 di "Ranking variables: `rank_name1' vs `rank_name2'"
+  8.                 conc_index_sensi pc`outcome_name'_2018 rank_`rank_name1' rank_`rank_name2' psu weight [fweight = fweight] using "01_Intermediate_Extracts\t
+> ob_alc_health_final_concurve_`year_name'.dta", year(`year_name')
+  9.                 di " "
+ 10.         }
+ 11. }
+Ranking variables: inc_pcinc vs exp_pcexp
+====================================================================================================
+pctob_2018 for the year 2012
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.15825            0.17975             -0.02150  0.00207   0.000     -0.02555       -.01744701
+====================================================================================================
+ 
+Ranking variables: inc_pcinc vs exp_pcexp
+====================================================================================================
+pcalc_2018 for the year 2012
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.25756            0.27074             -0.01318  0.00207   0.000     -0.01724       -.00913086
+====================================================================================================
+ 
+Ranking variables: inc_pcinc vs exp_pcexp
+====================================================================================================
+pchea_2018 for the year 2012
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.58818            0.63107             -0.04289  0.00334   0.000     -0.04943       -.0363504
+====================================================================================================
+ 
+Ranking variables: inc_pcinc vs exp_pcexp
+====================================================================================================
+pctob_2018 for the year 2015
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.14998            0.17032             -0.02034  0.00221   0.000     -0.02467       -.01602236
+====================================================================================================
+ 
+Ranking variables: inc_pcinc vs exp_pcexp
+====================================================================================================
+pcalc_2018 for the year 2015
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.23722            0.25021             -0.01299  0.00223   0.000     -0.01737       -.0086131
+====================================================================================================
+ 
+Ranking variables: inc_pcinc vs exp_pcexp
+====================================================================================================
+pchea_2018 for the year 2015
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.58074            0.62472             -0.04398  0.00306   0.000     -0.04998       -.03798314
+====================================================================================================
+ 
+Ranking variables: inc_pcinc vs exp_pcexp
+====================================================================================================
+pctob_2018 for the year 2018
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.21089            0.24385             -0.03295  0.00164   0.000     -0.03616       -.02974507
+====================================================================================================
+ 
+Ranking variables: inc_pcinc vs exp_pcexp
+====================================================================================================
+pcalc_2018 for the year 2018
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.26276            0.28181             -0.01905  0.00158   0.000     -0.02213       -.01595926
+====================================================================================================
+ 
+Ranking variables: inc_pcinc vs exp_pcexp
+====================================================================================================
+pchea_2018 for the year 2018
+ 
+CIndex Income      CIndex Expenditure  Diff      SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.55827            0.59577             -0.03749  0.00181   0.000     -0.04104       -.03394477
+====================================================================================================
+ 
+
+. *************************************************************************************
+. 
+. 
+. 
+. *************************************************************************************
+. ******** Kakwani's progressivity index
+. // The concentration index can be estimated from the regression
+. // 2*sigma_rank^2 (health / mean health - income / mean income) = constant + Kakwani index * rank + error
+. // Retrieve the beta coefficient of rank to get the POINT estimate of the concentration index
+. // For standard error, we may take the standard error of the beta coefficient but does not take account
+. // the sampling variability of the estimate of the mean of the health variable.
+. 
+. **** Generate a program that will calculate Kakwani's progressiviy indices
+. capture program drop kakwani_index
+
+. program define kakwani_index
+  1.         syntax varlist (min = 5 max = 5) [fweight] using, year(integer)
+  2.         use `using', clear      
+  3.         local outcome: word 1 of `varlist'
+  4.         local living: word 2 of `varlist' 
+  5.         local rank: word 3 of `varlist'
+  6.         local psu: word 4 of `varlist'
+  7.         local prob_weight: word 5 of `varlist'
+  8.         // Calculate the mean of the outcome and store in scalar mean
+.         qui sum `outcome' [`weight'`exp']
+  9.         local mean_outcome = r(mean)
+ 10.         // Calculate the mean of the living standards variable (income) and store in scalar mean
+.         qui sum `living' [`weight'`exp']
+ 11.         local mean_living = r(mean)
+ 12.         // Calculate the variance of the rank and store in scalar v_rank
+.         qui sum `rank' [`weight'`exp']
+ 13.         local v_rank = r(Var)
+ 14.         // Generate left hand side of regression
+.         tempvar lhs 
+ 15.         gen `lhs' = 2 * `v_rank' * (`outcome'/`mean_outcome' - `living'/`mean_living')
+ 16.         // Regress 
+.         qui svy: regr `lhs' `rank'
+ 17.         // Retrieve coefficient - this is the Kakwani progressivity index point estimate
+.         local ki = _b[`rank']
+ 18.         local ki_se = _se[`rank']
+ 19.         local ki_upper = _b[`rank'] + abs(invnormal(0.025))*`ki_se'
+ 20.         local ki_lower = _b[`rank'] - abs(invnormal(0.025))*`ki_se'
+ 21.         local ki_pval = normal(`ki'/`ki_se')
+ 22.         // Regress to retrieve outcome concentration index
+.         tempvar lhs_outcome
+ 23.         gen `lhs_outcome' = 2 * `v_rank' * (`outcome'/`mean_outcome')
+ 24.         qui svy: regr `lhs_outcome' `rank'
+ 25.         local ci_outcome = _b[`rank']
+ 26.         // Regress to retrieve living standards concentration index
+.         tempvar lhs_living
+ 27.         gen `lhs_living' = 2 * `v_rank' * (`living'/`mean_living')
+ 28.         qui svy: regr `lhs_living' `rank'
+ 29.         local ci_living = _b[`rank']
+ 30.         // Display all the results
+.         di as text _dup(110) "="
+ 31.         di "Kakwani Progressivity Index for `outcome'" " for the year " `year' " using ranking variable `living'"
+ 32.         di " "
+ 33.         di "CIndex Outcome" _col(18) "CIndex Living" _col(35) "Kakwani Index" _col(50) "SE" _col(60) "p-value" _col(70) "Lower 95% CI" _col(85) "Upper 95% 
+> CI"
+ 34.         di as text _dup(100) "-"
+ 35.         di %6.5f `ci_outcome' _col(18) %6.5f `ci_living' _col(35) %6.5f `ki' _col(50) %6.5f `ki_se' _col(60) %4.3f `ki_pval' _col(70) %6.5f `ki_lower' _col
+> (85) %6.5f `ki_upper'
+ 36.         di as text _dup(100) "="
+ 37. end
+
+. // Sample code kakwani_index tobacco_2018 toinc_2018 rank_inc psu weight [fweight = fweight] using "01_Intermediate_Extracts\tob_alc_health_final_concurve_201
+> 2.dta", year(2012)
+. 
+. 
+. **** Run commands to generate Kakwani progessivity index point estimate and SE
+. // Ranking by total household income and total household expenditure
+. forvalues h = 1/3 {
+  2.         local year_name: word `h' of `surveyyear'
+  3.         forvalues i = 1/2 {
+  4.                 local rank_name: word `i' of `rank_var_short1'
+  5.                 local living_name: word `i' of `rank_varlist_tot'
+  6.                 forvalues j = 1/3 {
+  7.                         local outcome_name: word `j' of `expense_name'
+  8.                         di "Ranking variable: `rank_name'"
+  9.                         kakwani_index `outcome_name'_2018 `living_name' rank_`rank_name' psu weight [fweight = fweight] using "01_Intermediate_Extracts\tob
+> _alc_health_final_concurve_`year_name'.dta", year(`year_name')
+ 10.                         di " "
+ 11.                 } 
+ 12.         }
+ 13. }
+Ranking variable: inc_toinc
+==============================================================================================================
+Kakwani Progressivity Index for tobacco_2018 for the year 2012 using ranking variable toinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.15120          0.46173          -0.31053       0.01200   0.000     -0.33404       -0.28701
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+==============================================================================================================
+Kakwani Progressivity Index for alcohol_2018 for the year 2012 using ranking variable toinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.22171          0.46173          -0.24002       0.01244   0.000     -0.26439       -0.21564
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+==============================================================================================================
+Kakwani Progressivity Index for health_2018 for the year 2012 using ranking variable toinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.54053          0.46173          0.07880        0.02194   1.000     0.03581        0.12180
+====================================================================================================
+ 
+Ranking variable: exp_totex
+==============================================================================================================
+Kakwani Progressivity Index for tobacco_2018 for the year 2012 using ranking variable totex_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.17269          0.42140          -0.24872       0.01048   0.000     -0.26925       -0.22818
+====================================================================================================
+ 
+Ranking variable: exp_totex
+==============================================================================================================
+Kakwani Progressivity Index for alcohol_2018 for the year 2012 using ranking variable totex_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.23335          0.42140          -0.18806       0.01105   0.000     -0.20971       -0.16640
+====================================================================================================
+ 
+Ranking variable: exp_totex
+==============================================================================================================
+Kakwani Progressivity Index for health_2018 for the year 2012 using ranking variable totex_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.58520          0.42140          0.16380        0.02261   1.000     0.11949        0.20811
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+==============================================================================================================
+Kakwani Progressivity Index for tobacco_2018 for the year 2015 using ranking variable toinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.13281          0.44409          -0.31128       0.00955   0.000     -0.33000       -0.29255
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+==============================================================================================================
+Kakwani Progressivity Index for alcohol_2018 for the year 2015 using ranking variable toinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.20487          0.44409          -0.23921       0.01010   0.000     -0.25900       -0.21943
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+==============================================================================================================
+Kakwani Progressivity Index for health_2018 for the year 2015 using ranking variable toinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.51208          0.44409          0.06799        0.01868   1.000     0.03138        0.10460
+====================================================================================================
+ 
+Ranking variable: exp_totex
+==============================================================================================================
+Kakwani Progressivity Index for tobacco_2018 for the year 2015 using ranking variable totex_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.15255          0.40484          -0.25229       0.00889   0.000     -0.26971       -0.23486
+====================================================================================================
+ 
+Ranking variable: exp_totex
+==============================================================================================================
+Kakwani Progressivity Index for alcohol_2018 for the year 2015 using ranking variable totex_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.21614          0.40484          -0.18870       0.00979   0.000     -0.20788       -0.16951
+====================================================================================================
+ 
+Ranking variable: exp_totex
+==============================================================================================================
+Kakwani Progressivity Index for health_2018 for the year 2015 using ranking variable totex_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.55909          0.40484          0.15425        0.01879   1.000     0.11742        0.19109
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+==============================================================================================================
+Kakwani Progressivity Index for tobacco_2018 for the year 2018 using ranking variable toinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.18856          0.41919          -0.23062       0.00715   0.000     -0.24464       -0.21660
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+==============================================================================================================
+Kakwani Progressivity Index for alcohol_2018 for the year 2018 using ranking variable toinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.22494          0.41919          -0.19425       0.00738   0.000     -0.20872       -0.17978
+====================================================================================================
+ 
+Ranking variable: inc_toinc
+==============================================================================================================
+Kakwani Progressivity Index for health_2018 for the year 2018 using ranking variable toinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.48844          0.41919          0.06925        0.01540   1.000     0.03906        0.09945
+====================================================================================================
+ 
+Ranking variable: exp_totex
+==============================================================================================================
+Kakwani Progressivity Index for tobacco_2018 for the year 2018 using ranking variable totex_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.22344          0.37656          -0.15312       0.00681   0.000     -0.16647       -0.13978
+====================================================================================================
+ 
+Ranking variable: exp_totex
+==============================================================================================================
+Kakwani Progressivity Index for alcohol_2018 for the year 2018 using ranking variable totex_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.24430          0.37656          -0.13226       0.00686   0.000     -0.14571       -0.11882
+====================================================================================================
+ 
+Ranking variable: exp_totex
+==============================================================================================================
+Kakwani Progressivity Index for health_2018 for the year 2018 using ranking variable totex_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.52577          0.37656          0.14920        0.01577   1.000     0.11830        0.18011
+====================================================================================================
+ 
+
+. // Ranking by per capita household income and household expenditure
+. forvalues h = 1/3 {
+  2.         local year_name: word `h' of `surveyyear'
+  3.         forvalues i = 1/2 {
+  4.                 local rank_name: word `i' of `rank_var_short3'
+  5.                 local living_name: word `i' of `rank_varlist_pc'
+  6.                 forvalues j = 1/3 {
+  7.                         local outcome_name: word `j' of `exp_name'
+  8.                         di "Ranking variable: `rank_name'"
+  9.                         kakwani_index pc`outcome_name'_2018 `living_name' rank_`rank_name' psu weight [fweight = fweight] using "01_Intermediate_Extracts\t
+> ob_alc_health_final_concurve_`year_name'.dta", year(`year_name')
+ 10.                         di " "
+ 11.                 } 
+ 12.         }
+ 13. }
+Ranking variable: inc_pcinc
+==============================================================================================================
+Kakwani Progressivity Index for pctob_2018 for the year 2012 using ranking variable pcinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.15825          0.48388          -0.32563       0.01531   0.000     -0.35564       -0.29562
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+==============================================================================================================
+Kakwani Progressivity Index for pcalc_2018 for the year 2012 using ranking variable pcinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.25756          0.48388          -0.22632       0.01536   0.000     -0.25642       -0.19622
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+==============================================================================================================
+Kakwani Progressivity Index for pchea_2018 for the year 2012 using ranking variable pcinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.58818          0.48388          0.10430        0.02521   1.000     0.05489        0.15371
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+==============================================================================================================
+Kakwani Progressivity Index for pctob_2018 for the year 2012 using ranking variable pcexp_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.17975          0.44250          -0.26275       0.01304   0.000     -0.28830       -0.23720
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+==============================================================================================================
+Kakwani Progressivity Index for pcalc_2018 for the year 2012 using ranking variable pcexp_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.27074          0.44250          -0.17176       0.01329   0.000     -0.19780       -0.14572
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+==============================================================================================================
+Kakwani Progressivity Index for pchea_2018 for the year 2012 using ranking variable pcexp_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.63107          0.44250          0.18857        0.02527   1.000     0.13905        0.23809
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+==============================================================================================================
+Kakwani Progressivity Index for pctob_2018 for the year 2015 using ranking variable pcinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.14998          0.46525          -0.31527       0.01174   0.000     -0.33829       -0.29226
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+==============================================================================================================
+Kakwani Progressivity Index for pcalc_2018 for the year 2015 using ranking variable pcinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.23722          0.46525          -0.22804       0.01252   0.000     -0.25257       -0.20350
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+==============================================================================================================
+Kakwani Progressivity Index for pchea_2018 for the year 2015 using ranking variable pcinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.58074          0.46525          0.11549        0.02344   1.000     0.06954        0.16143
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+==============================================================================================================
+Kakwani Progressivity Index for pctob_2018 for the year 2015 using ranking variable pcexp_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.17032          0.42665          -0.25633       0.01125   0.000     -0.27838       -0.23428
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+==============================================================================================================
+Kakwani Progressivity Index for pcalc_2018 for the year 2015 using ranking variable pcexp_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.25021          0.42665          -0.17645       0.01202   0.000     -0.20000       -0.15290
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+==============================================================================================================
+Kakwani Progressivity Index for pchea_2018 for the year 2015 using ranking variable pcexp_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.62472          0.42665          0.19807        0.02310   1.000     0.15279        0.24335
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+==============================================================================================================
+Kakwani Progressivity Index for pctob_2018 for the year 2018 using ranking variable pcinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.21089          0.44390          -0.23301       0.00856   0.000     -0.24978       -0.21624
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+==============================================================================================================
+Kakwani Progressivity Index for pcalc_2018 for the year 2018 using ranking variable pcinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.26276          0.44390          -0.18114       0.00935   0.000     -0.19946       -0.16282
+====================================================================================================
+ 
+Ranking variable: inc_pcinc
+==============================================================================================================
+Kakwani Progressivity Index for pchea_2018 for the year 2018 using ranking variable pcinc_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.55827          0.44390          0.11437        0.01734   1.000     0.08039        0.14836
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+==============================================================================================================
+Kakwani Progressivity Index for pctob_2018 for the year 2018 using ranking variable pcexp_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.24385          0.40339          -0.15954       0.00872   0.000     -0.17663       -0.14245
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+==============================================================================================================
+Kakwani Progressivity Index for pcalc_2018 for the year 2018 using ranking variable pcexp_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.28181          0.40339          -0.12158       0.00927   0.000     -0.13975       -0.10341
+====================================================================================================
+ 
+Ranking variable: exp_pcexp
+==============================================================================================================
+Kakwani Progressivity Index for pchea_2018 for the year 2018 using ranking variable pcexp_2018
+ 
+CIndex Outcome   CIndex Living    Kakwani Index  SE        p-value   Lower 95% CI   Upper 95% CI
+----------------------------------------------------------------------------------------------------
+0.59577          0.40339          0.19238        0.01767   1.000     0.15776        0.22700
+====================================================================================================
+ 
+
+. 
+. 
+. log close Log03_ConcentrationCurve
+      name:  Log03_ConcentrationCurve
+       log:  C:\Users\neljasonhaw\OneDrive\Documents\Teaching\Research\FIES 2012 to 2018\Code\03_Log_Files\03 Concentration Curves.log
+  log type:  text
+ closed on:  10 Aug 2021, 13:34:18
+----------------------------------------------------------------------------------------------------------------------------------------------------------------

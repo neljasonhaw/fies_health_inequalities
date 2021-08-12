@@ -1,0 +1,996 @@
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  Log04_Impoverishment
+       log:  C:\Users\neljasonhaw\OneDrive\Documents\Teaching\Research\FIES 2012 to 2018\Code\03_Log_Files\04 Impoverishment.log
+  log type:  text
+ opened on:   9 Aug 2021, 09:32:19
+
+. set more off
+
+. version 17
+
+. 
+. 
+. ******** Load data set, survey set declarations
+. use "01_Intermediate_Extracts\tob_alc_health_final.dta"
+
+. svyset psu [pweight = weight], strata(stratum) singleunit(centered)
+
+Sampling weights: weight
+             VCE: linearized
+     Single unit: centered
+        Strata 1: stratum
+ Sampling unit 1: psu
+           FPC 1: <zero>
+
+. // Need to generate fweights since most commands here on won't accept pweights
+. gen fweight = int(weight * 1000000)     
+
+. label variable fweight "Frequency weight (pweight * 1,000,000)"
+
+. 
+. 
+. *************************************************************************************
+. ******** Calculate overall poverty incidence
+. // Overall
+. svy: tab poor_new2015 survey, obs col format(%10.3f) ci
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+----------------------------------------------------------------------
+Poverty   |
+status    |
+(new 2015 |
+threshold |                        Survey round                       
+)         |          2012           2015           2018          Total
+----------+-----------------------------------------------------------
+       No |         0.803          0.820          0.879          0.824
+          | [0.795,0.811]  [0.812,0.827]  [0.875,0.882]  [0.820,0.829]
+          |     31173.000      32712.000     126074.000     189959.000
+          | 
+      Yes |         0.197          0.180          0.121          0.176
+          | [0.189,0.205]  [0.173,0.188]  [0.118,0.125]  [0.171,0.180]
+          |      8998.000       8832.000      21643.000      39473.000
+          | 
+    Total |         1.000          1.000          1.000          1.000
+          |                                                           
+          |     40171.000      41544.000     147717.000     229432.000
+----------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         = 1175.4410
+    Design-based  F(1.47, 23823.43)=  100.4309    P = 0.0000
+
+Note: Strata with single sampling unit centered at overall mean.
+
+. svy: tab poor_old2015 survey, obs col format(%10.3f) ci
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+----------------------------------------------------------------------
+Poverty   |
+status    |
+(old 2015 |
+threshold |                        Survey round                       
+)         |          2012           2015           2018          Total
+----------+-----------------------------------------------------------
+       No |         0.803          0.835          0.879          0.831
+          | [0.795,0.811]  [0.828,0.842]  [0.875,0.882]  [0.826,0.835]
+          |     31173.000      33463.000     126074.000     190710.000
+          | 
+      Yes |         0.197          0.165          0.121          0.169
+          | [0.189,0.205]  [0.158,0.172]  [0.118,0.125]  [0.165,0.174]
+          |      8998.000       8081.000      21643.000      38722.000
+          | 
+    Total |         1.000          1.000          1.000          1.000
+          |                                                           
+          |     40171.000      41544.000     147717.000     229432.000
+----------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         = 1210.3886
+    Design-based  F(1.48, 23971.93)=  104.6187    P = 0.0000
+
+Note: Strata with single sampling unit centered at overall mean.
+
+. 
+. 
+. ******** Calculate poverty incidence after accounting for expenditures
+. *** Generate new income variables net of expenditures
+. local exp_type tobacco alcohol health
+
+. local exp_title " "tobacco" "alcohol" "health OOP" "
+
+. local oldnew old new
+
+. local urbrur rur urb
+
+. 
+. forvalues h = 1/3 {
+  2.         local exp_name: word `h' of `exp_type'
+  3.         local exp_title_name: word `h' of `exp_title'
+  4.         qui gen pcinc_net_`exp_name' = pcinc - (`exp_name' / fsize)
+  5.         label variable pcinc_net_`exp_name' "Per capita income net of `exp_title_name' expenditure (Nominal)"
+  6.         forvalues i = 1/2 {
+  7.                 local oldnew_name: word `i' of `oldnew'
+  8.                 qui gen poor_`oldnew_name'2015_net_`exp_name' = .
+  9.                 label variable poor_`oldnew_name'2015_net_`exp_name' "Poverty status net of `exp_title_name' expenditure (`oldnew_name' 2015 threshold)"
+ 10.                 forvalues j = 1/2 {
+ 11.                         local urbrur_name: word `j' of `urbrur'
+ 12.                         qui replace poor_`oldnew_name'2015_net_`exp_name' = 1 if urb == `j' - 1 & survey == 1 & pcinc_net_`exp_name' <= pt_`urbrur_name'_20
+> 12
+ 13.                         qui replace poor_`oldnew_name'2015_net_`exp_name' = 0 if urb == `j' - 1 & survey == 1 & pcinc_net_`exp_name' > pt_`urbrur_name'_201
+> 2
+ 14.                         qui replace poor_`oldnew_name'2015_net_`exp_name' = 1 if urb == `j' - 1 & survey == 2 & pcinc_net_`exp_name' <= pt_`urbrur_name'_20
+> 15_`oldnew_name'
+ 15.                         qui replace poor_`oldnew_name'2015_net_`exp_name' = 0 if urb == `j' - 1 & survey == 2 & pcinc_net_`exp_name' > pt_`urbrur_name'_201
+> 5_`oldnew_name'
+ 16.                         qui replace poor_`oldnew_name'2015_net_`exp_name' = 1 if urb == `j' - 1 & survey == 3 & pcinc_net_`exp_name' <= pt_`urbrur_name'_20
+> 18
+ 17.                         qui replace poor_`oldnew_name'2015_net_`exp_name' = 0 if urb == `j' - 1 & survey == 3 & pcinc_net_`exp_name' > pt_`urbrur_name'_201
+> 8
+ 18.                         label values poor_`oldnew_name'2015_net_`exp_name' noyes
+ 19.                 }
+ 20.                 // Report poverty incidence
+.                 svy: tab poor_`oldnew_name'2015_net_`exp_name' survey, obs col format(%10.3f) ci
+ 21.                 // Test for differences
+.                 qui gen pov_change_`oldnew_name'2015_`exp_name' = poor_`oldnew_name'2015_net_`exp_name' - poor_`oldnew_name'2015
+ 22.                 label variable pov_change_`oldnew_name'2015_`exp_name' "Became poor after `exp_title_name' expenditure (`oldnew_name' 2015 threshold)"
+ 23.                 label values pov_change_`oldnew_name'2015_`exp_name' noyes
+ 24.                 svy: tab pov_change_`oldnew_name'2015_`exp_name' survey, obs col format(%12.5f) ci              
+ 25.         }
+ 26. }
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+----------------------------------------------------------------------
+Poverty   |
+status    |
+net of    |
+tobacco   |
+expenditu |
+re (old   |
+2015      |
+threshold |                        Survey round                       
+)         |          2012           2015           2018          Total
+----------+-----------------------------------------------------------
+       No |         0.797          0.827          0.872          0.823
+          | [0.789,0.805]  [0.819,0.834]  [0.869,0.876]  [0.819,0.828]
+          |     30898.000      33087.000     125170.000     189155.000
+          | 
+      Yes |         0.203          0.173          0.128          0.177
+          | [0.195,0.211]  [0.166,0.181]  [0.124,0.131]  [0.172,0.181]
+          |      9273.000       8457.000      22547.000      40277.000
+          | 
+    Total |         1.000          1.000          1.000          1.000
+          |                                                           
+          |     40171.000      41544.000     147717.000     229432.000
+----------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         = 1166.7904
+    Design-based  F(1.48, 23988.50)=  100.5404    P = 0.0000
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+--------------------------------------------------------------------------------------
+Became    |
+poor      |
+after     |
+tobacco   |
+expenditu |
+re (old   |
+2015      |
+threshold |                                Survey round                               
+)         |              2012               2015               2018              Total
+----------+---------------------------------------------------------------------------
+       No |           0.99365            0.99149            0.99388            0.99281
+          | [0.99277,0.99443]  [0.99047,0.99240]  [0.99331,0.99439]  [0.99226,0.99331]
+          |       39896.00000        41168.00000       146813.00000       227877.00000
+          | 
+      Yes |           0.00635            0.00851            0.00612            0.00719
+          | [0.00557,0.00723]  [0.00760,0.00953]  [0.00561,0.00669]  [0.00669,0.00774]
+          |         275.00000          376.00000          904.00000         1555.00000
+          | 
+    Total |           1.00000            1.00000            1.00000            1.00000
+          |                                                                           
+          |       40171.00000        41544.00000       147717.00000       229432.00000
+--------------------------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         =   38.9356
+    Design-based  F(1.60, 26010.38)=   11.0960    P = 0.0001
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+----------------------------------------------------------------------
+Poverty   |
+status    |
+net of    |
+tobacco   |
+expenditu |
+re (new   |
+2015      |
+threshold |                        Survey round                       
+)         |          2012           2015           2018          Total
+----------+-----------------------------------------------------------
+       No |         0.797          0.811          0.872          0.817
+          | [0.789,0.805]  [0.803,0.819]  [0.869,0.876]  [0.813,0.822]
+          |     30898.000      32342.000     125170.000     188410.000
+          | 
+      Yes |         0.203          0.189          0.128          0.183
+          | [0.195,0.211]  [0.181,0.197]  [0.124,0.131]  [0.178,0.187]
+          |      9273.000       9202.000      22547.000      41022.000
+          | 
+    Total |         1.000          1.000          1.000          1.000
+          |                                                           
+          |     40171.000      41544.000     147717.000     229432.000
+----------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         = 1160.1457
+    Design-based  F(1.47, 23831.60)=   98.3997    P = 0.0000
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+--------------------------------------------------------------------------------------
+Became    |
+poor      |
+after     |
+tobacco   |
+expenditu |
+re (new   |
+2015      |
+threshold |                                Survey round                               
+)         |              2012               2015               2018              Total
+----------+---------------------------------------------------------------------------
+       No |           0.99365            0.99158            0.99388            0.99284
+          | [0.99277,0.99443]  [0.99055,0.99250]  [0.99331,0.99439]  [0.99229,0.99335]
+          |       39896.00000        41174.00000       146813.00000       227883.00000
+          | 
+      Yes |           0.00635            0.00842            0.00612            0.00716
+          | [0.00557,0.00723]  [0.00750,0.00945]  [0.00561,0.00669]  [0.00665,0.00771]
+          |         275.00000          370.00000          904.00000         1549.00000
+          | 
+    Total |           1.00000            1.00000            1.00000            1.00000
+          |                                                                           
+          |       40171.00000        41544.00000       147717.00000       229432.00000
+--------------------------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         =   36.2571
+    Design-based  F(1.60, 25982.28)=   10.2066    P = 0.0002
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+----------------------------------------------------------------------
+Poverty   |
+status    |
+net of    |
+alcohol   |
+expenditu |
+re (old   |
+2015      |
+threshold |                        Survey round                       
+)         |          2012           2015           2018          Total
+----------+-----------------------------------------------------------
+       No |         0.800          0.832          0.876          0.827
+          | [0.792,0.807]  [0.824,0.839]  [0.873,0.879]  [0.823,0.832]
+          |     31020.000      33315.000     125694.000     190029.000
+          | 
+      Yes |         0.200          0.168          0.124          0.173
+          | [0.193,0.208]  [0.161,0.176]  [0.121,0.127]  [0.168,0.177]
+          |      9151.000       8229.000      22023.000      39403.000
+          | 
+    Total |         1.000          1.000          1.000          1.000
+          |                                                           
+          |     40171.000      41544.000     147717.000     229432.000
+----------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         = 1230.4185
+    Design-based  F(1.48, 23967.74)=  106.0887    P = 0.0000
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+--------------------------------------------------------------------------------------
+Became    |
+poor      |
+after     |
+alcohol   |
+expenditu |
+re (old   |
+2015      |
+threshold |                                Survey round                               
+)         |              2012               2015               2018              Total
+----------+---------------------------------------------------------------------------
+       No |           0.99630            0.99665            0.99754            0.99668
+          | [0.99562,0.99687]  [0.99602,0.99718]  [0.99719,0.99785]  [0.99631,0.99701]
+          |       40018.00000        41396.00000       147337.00000       228751.00000
+          | 
+      Yes |           0.00370            0.00335            0.00246            0.00332
+          | [0.00313,0.00438]  [0.00282,0.00398]  [0.00215,0.00281]  [0.00299,0.00369]
+          |         153.00000          148.00000          380.00000          681.00000
+          | 
+    Total |           1.00000            1.00000            1.00000            1.00000
+          |                                                                           
+          |       40171.00000        41544.00000       147717.00000       229432.00000
+--------------------------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         =   13.7353
+    Design-based  F(1.57, 25507.55)=    4.1910    P = 0.0232
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+----------------------------------------------------------------------
+Poverty   |
+status    |
+net of    |
+alcohol   |
+expenditu |
+re (new   |
+2015      |
+threshold |                        Survey round                       
+)         |          2012           2015           2018          Total
+----------+-----------------------------------------------------------
+       No |         0.800          0.816          0.876          0.821
+          | [0.792,0.807]  [0.808,0.824]  [0.873,0.879]  [0.816,0.825]
+          |     31020.000      32560.000     125694.000     189274.000
+          | 
+      Yes |         0.200          0.184          0.124          0.179
+          | [0.193,0.208]  [0.176,0.192]  [0.121,0.127]  [0.175,0.184]
+          |      9151.000       8984.000      22023.000      40158.000
+          | 
+    Total |         1.000          1.000          1.000          1.000
+          |                                                           
+          |     40171.000      41544.000     147717.000     229432.000
+----------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         = 1197.0690
+    Design-based  F(1.47, 23824.02)=  102.1263    P = 0.0000
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+--------------------------------------------------------------------------------------
+Became    |
+poor      |
+after     |
+alcohol   |
+expenditu |
+re (new   |
+2015      |
+threshold |                                Survey round                               
+)         |              2012               2015               2018              Total
+----------+---------------------------------------------------------------------------
+       No |           0.99630            0.99645            0.99754            0.99660
+          | [0.99562,0.99687]  [0.99578,0.99702]  [0.99719,0.99785]  [0.99621,0.99694]
+          |       40018.00000        41392.00000       147337.00000       228747.00000
+          | 
+      Yes |           0.00370            0.00355            0.00246            0.00340
+          | [0.00313,0.00438]  [0.00298,0.00422]  [0.00215,0.00281]  [0.00306,0.00379]
+          |         153.00000          152.00000          380.00000          685.00000
+          | 
+    Total |           1.00000            1.00000            1.00000            1.00000
+          |                                                                           
+          |       40171.00000        41544.00000       147717.00000       229432.00000
+--------------------------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         =   14.3318
+    Design-based  F(1.56, 25289.66)=    4.2491    P = 0.0224
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+----------------------------------------------------------------------
+Poverty   |
+status    |
+net of    |
+health    |
+OOP       |
+expenditu |
+re (old   |
+2015      |
+threshold |                        Survey round                       
+)         |          2012           2015           2018          Total
+----------+-----------------------------------------------------------
+       No |         0.793          0.825          0.873          0.821
+          | [0.785,0.801]  [0.818,0.832]  [0.869,0.876]  [0.817,0.826]
+          |     30738.000      33029.000     125145.000     188912.000
+          | 
+      Yes |         0.207          0.175          0.127          0.179
+          | [0.199,0.215]  [0.168,0.182]  [0.124,0.131]  [0.174,0.183]
+          |      9433.000       8515.000      22572.000      40520.000
+          | 
+    Total |         1.000          1.000          1.000          1.000
+          |                                                           
+          |     40171.000      41544.000     147717.000     229432.000
+----------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         = 1294.9816
+    Design-based  F(1.47, 23926.75)=  112.2149    P = 0.0000
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+--------------------------------------------------------------------------------------
+Became    |
+poor      |
+after     |
+health    |
+OOP       |
+expenditu |
+re (old   |
+2015      |
+threshold |                                Survey round                               
+)         |              2012               2015               2018              Total
+----------+---------------------------------------------------------------------------
+       No |           0.98970            0.99001            0.99423            0.99068
+          | [0.98860,0.99069]  [0.98892,0.99099]  [0.99369,0.99472]  [0.99005,0.99127]
+          |       39736.00000        41110.00000       146788.00000       227634.00000
+          | 
+      Yes |           0.01030            0.00999            0.00577            0.00932
+          | [0.00931,0.01140]  [0.00901,0.01108]  [0.00528,0.00631]  [0.00873,0.00995]
+          |         435.00000          434.00000          929.00000         1798.00000
+          | 
+    Total |           1.00000            1.00000            1.00000            1.00000
+          |                                                                           
+          |       40171.00000        41544.00000       147717.00000       229432.00000
+--------------------------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         =   73.2088
+    Design-based  F(1.54, 24978.86)=   21.6155    P = 0.0000
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+----------------------------------------------------------------------
+Poverty   |
+status    |
+net of    |
+health    |
+OOP       |
+expenditu |
+re (new   |
+2015      |
+threshold |                        Survey round                       
+)         |          2012           2015           2018          Total
+----------+-----------------------------------------------------------
+       No |         0.793          0.810          0.873          0.815
+          | [0.785,0.801]  [0.802,0.817]  [0.869,0.876]  [0.810,0.819]
+          |     30738.000      32275.000     125145.000     188158.000
+          | 
+      Yes |         0.207          0.190          0.127          0.185
+          | [0.199,0.215]  [0.183,0.198]  [0.124,0.131]  [0.181,0.190]
+          |      9433.000       9269.000      22572.000      41274.000
+          | 
+    Total |         1.000          1.000          1.000          1.000
+          |                                                           
+          |     40171.000      41544.000     147717.000     229432.000
+----------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         = 1273.7347
+    Design-based  F(1.47, 23801.42)=  109.6229    P = 0.0000
+
+Note: Strata with single sampling unit centered at overall mean.
+(running tabulate on estimation sample)
+
+Number of strata =    832                     Number of obs   =        229,432
+Number of PSUs   = 17,077                     Population size = 20,395,818,012
+                                              Design df       =         16,245
+
+--------------------------------------------------------------------------------------
+Became    |
+poor      |
+after     |
+health    |
+OOP       |
+expenditu |
+re (new   |
+2015      |
+threshold |                                Survey round                               
+)         |              2012               2015               2018              Total
+----------+---------------------------------------------------------------------------
+       No |           0.98970            0.98987            0.99423            0.99062
+          | [0.98860,0.99069]  [0.98880,0.99085]  [0.99369,0.99472]  [0.99000,0.99121]
+          |       39736.00000        41107.00000       146788.00000       227631.00000
+          | 
+      Yes |           0.01030            0.01013            0.00577            0.00938
+          | [0.00931,0.01140]  [0.00915,0.01120]  [0.00528,0.00631]  [0.00879,0.01000]
+          |         435.00000          437.00000          929.00000         1801.00000
+          | 
+    Total |           1.00000            1.00000            1.00000            1.00000
+          |                                                                           
+          |       40171.00000        41544.00000       147717.00000       229432.00000
+--------------------------------------------------------------------------------------
+Key: Column proportion
+     [95% confidence interval for column proportion]
+     Number of observations
+
+  Pearson:
+    Uncorrected   chi2(2)         =   74.7427
+    Design-based  F(1.54, 25061.69)=   22.4891    P = 0.0000
+
+Note: Strata with single sampling unit centered at overall mean.
+
+. 
+. save "01_Intermediate_Extracts\tob_alc_health_final_net.dta", replace 
+file 01_Intermediate_Extracts\tob_alc_health_final_net.dta saved
+
+. *************************************************************************************
+. 
+. 
+. 
+. *************************************************************************************
+. ******** Generate new variables for Pen's parade then export data for R visualization
+. 
+. *** Per capita income as a multiple of poverty line
+. forvalues i = 1/2 {
+  2.         local oldnew_name: word `i' of `oldnew'
+  3.         qui gen poor_`oldnew_name'2015_mult = .
+  4.         label variable poor_`oldnew_name'2015_mult "Per capita income as a multiple of poverty line (`oldnew_name' 2015 threshold)"
+  5.         forvalues j = 1/2 {
+  6.                 local urbrur_name: word `j' of `urbrur'
+  7.                 qui replace poor_`oldnew_name'2015_mult = pcinc / pt_`urbrur_name'_2012 if urb == `j' - 1 & survey == 1
+  8.                 qui replace poor_`oldnew_name'2015_mult = pcinc / pt_`urbrur_name'_2015_`oldnew_name' if urb == `j' - 1 & survey == 2
+  9.                 qui replace poor_`oldnew_name'2015_mult = pcinc / pt_`urbrur_name'_2018 if urb == `j' - 1 & survey == 3
+ 10.                 label values poor_`oldnew_name'2015_mult noyes
+ 11.         }
+ 12. }
+
+. 
+. *** Tobacco, alcohol, and health OOP expenditure as multiple of poverty line
+. forvalues h = 1/3 {
+  2.         local exp_name: word `h' of `exp_type'
+  3.         local exp_title_name: word `h' of `exp_title'
+  4.         forvalues i = 1/2 {
+  5.                 local oldnew_name: word `i' of `oldnew'
+  6.                 qui gen poor_`oldnew_name'2015_mult_net_`exp_name' = .
+  7.                 label variable poor_`oldnew_name'2015_mult_net_`exp_name' "Per capita `exp_title_name' expenditure as a multiple of poverty line (`oldnew_n
+> ame' 2015 threshold)"
+  8.                 forvalues j = 1/2 {
+  9.                         local urbrur_name: word `j' of `urbrur'
+ 10.                         qui replace poor_`oldnew_name'2015_mult_net_`exp_name' = (`exp_name' / fsize) / pt_`urbrur_name'_2012 if urb == `j' - 1 & survey ==
+>  1
+ 11.                         qui replace poor_`oldnew_name'2015_mult_net_`exp_name' = (`exp_name' / fsize) / pt_`urbrur_name'_2015_`oldnew_name' if urb == `j' -
+>  1 & survey == 2
+ 12.                         qui replace poor_`oldnew_name'2015_mult_net_`exp_name' = (`exp_name' / fsize) / pt_`urbrur_name'_2018 if urb == `j' - 1 & survey ==
+>  3
+ 13.                 }
+ 14.         }
+ 15. }
+note: label truncated to 80 characters
+note: label truncated to 80 characters
+note: label truncated to 80 characters
+note: label truncated to 80 characters
+note: label truncated to 80 characters
+note: label truncated to 80 characters
+
+. 
+. *** Extract relevant variables
+. // Four variables are needed:
+. // (1) Per capita income as a multiple of poverty line
+. // (2) Fractional rank variable by per capita income as a multiple of poverty line
+. // (3) Per capita expenditure as a multiple of poverty line
+. // (4) Per capita income - per capita expenditure as a multiple of poverty line
+. // Variations:
+. // Old vs new 2015 poverty threshold - at the moment wide
+. // Expenditure types: tobacco, alcohol, health OOP - at the moment wide
+. // Year: 2012, 2015, 2018 - at the moment, tall
+. 
+. // keep id survey fweight poor_old2015_mult poor_new2015_mult ///
+. //      poor_old2015_mult_net_tobacco poor_new2015_mult_net_tobacco ///
+. //      poor_old2015_mult_net_alcohol poor_new2015_mult_net_alcohol ///
+. //      poor_old2015_mult_net_health poor_new2015_mult_net_health
+. 
+. *** Generate per capita income fractional rank
+. forvalues i = 1/2 {
+  2.         local oldnew_name: word `i' of `oldnew'
+  3.         bysort survey: egen rank_poor_`oldnew_name'2015_mult = rank(poor_`oldnew_name'2015_mult), track
+  4.         egen maxrank_`oldnew_name' = max(rank_poor_`oldnew_name'2015_mult), by(survey)
+  5.         gen fracrank_poor_`oldnew_name'2015_mult = rank_poor_`oldnew_name'2015_mult / maxrank_`oldnew_name'
+  6.         label variable fracrank_poor_`oldnew_name'2015_mult "Fractional rank of per capita income (`oldnewname' 2015 threshold)"
+  7.         drop maxrank_`oldnew_name'
+  8. }
+
+. 
+. *** Generate the difference between per capita income and per capita expenditure
+. forvalues h = 1/3 {
+  2.         local exp_name: word `h' of `exp_type'
+  3.         local exp_title_name: word `h' of `exp_title'
+  4.         forvalues i = 1/2 {
+  5.                 local oldnew_name: word `i' of `oldnew'
+  6.                 gen diff_poor_`oldnew_name'2015_mult_`exp_name' = poor_`oldnew_name'2015_mult - poor_`oldnew_name'2015_mult_net_`exp_name'
+  7.                 label variable diff_poor_`oldnew_name'2015_mult_`exp_name' "Difference of per capita income and expenditure of `exp_title_name' (`oldnew_na
+> me' 2015 threshold)"
+  8.         }
+  9. }
+note: label truncated to 80 characters
+note: label truncated to 80 characters
+
+. 
+. *** Quality control check - compare the poverty threshold using a different formula
+. // forvalues h = 1/3 {
+. //      local exp_name: word `h' of `exp_type'
+. //      local exp_title_name: word `h' of `exp_title'
+. //      forvalues i = 1/2 {
+. //              local oldnew_name: word `i' of `oldnew'
+. //              gen new_poor_`oldnew_name'2015_net_`exp_name' = diff_poor_`oldnew_name'2015_mult_`exp_name' < 1
+. //              assert new_poor_`oldnew_name'2015_net_`exp_name' == poor_`oldnew_name'2015_net_`exp_name'
+. //      }
+. // }
+. *************************************************************************************
+. 
+. 
+. 
+. *************************************************************************************
+. ******** Normalized poverty gap
+. // Poverty gap is calculated as the difference between the poverty line and per capita income among those who are poor
+. // Normalizing it means dividing it by the poverty line
+. // Measures depth of poverty
+. 
+. *** Generate the normalized poverty gap of per capita income
+. forvalues i = 1/2 {
+  2.         local oldnew_name: word `i' of `oldnew'
+  3.         qui gen pov_gap_`oldnew_name'2015 = poor_`oldnew_name'2015 * (1 - poor_`oldnew_name'2015_mult)
+  4.         label variable pov_gap_`oldnew_name'2015 "Normalized poverty gap of pcinc (`oldnew_name' 2015 threshold)"
+  5. }
+
+. 
+. *** Generate the normalized poverty gap variable net of health expenditures
+. forvalues h = 1/3 {
+  2.         local exp_name: word `h' of `exp_type'
+  3.         local exp_title_name: word `h' of `exp_title'
+  4.         forvalues i = 1/2 {
+  5.                 local oldnew_name: word `i' of `oldnew'
+  6.                 qui gen pov_gap_`oldnew_name'2015_`exp_name' = poor_`oldnew_name'2015_net_`exp_name' * (1 - diff_poor_`oldnew_name'2015_mult_`exp_name')
+  7.                 label variable pov_gap_`oldnew_name'2015_`exp_name' "Norm pov gap of pcinc net of `exp_title_name' (`oldnew_name' 2015)"
+  8.         }
+  9. }
+
+. 
+. *** Generate the difference in poverty gaps and report differences
+. forvalues h = 1/3 {
+  2.         local exp_name: word `h' of `exp_type'
+  3.         local exp_title_name: word `h' of `exp_title'
+  4.         forvalues i = 1/2 {
+  5.                 local oldnew_name: word `i' of `oldnew'
+  6.                 qui gen absdiff_pov_gap_`oldnew_name'2015_`exp_name' = pov_gap_`oldnew_name'2015_`exp_name' - pov_gap_`oldnew_name'2015
+  7.                 label variable absdiff_pov_gap_`oldnew_name'2015_`exp_name' "Abs diff of norm pov gap of pcinc net of `exp_title_name' (`oldnew_name' 2015)
+> "
+  8.                 svy: mean absdiff_pov_gap_`oldnew_name'2015_`exp_name', over(survey)
+  9.                 qui gen reldiff_pov_gap_`oldnew_name'2015_`exp_name' = absdiff_pov_gap_`oldnew_name'2015_`exp_name' / pov_gap_`oldnew_name'2015
+ 10.                 label variable reldiff_pov_gap_`oldnew_name'2015_`exp_name' "Rel diff of norm pov gap of pcinc net of `exp_title_name' (`oldnew_name' 2015)
+> "
+ 11.                 svy: mean reldiff_pov_gap_`oldnew_name'2015_`exp_name', over(survey)
+ 12.         }
+ 13. }
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                                 Number of obs   =        229,432
+Number of PSUs   = 17,077                                 Population size = 20,395,818,012
+                                                          Design df       =         16,245
+
+------------------------------------------------------------------------------------------
+                                         |             Linearized
+                                         |       Mean   std. err.     [95% conf. interval]
+-----------------------------------------+------------------------------------------------
+c.absdiff_pov_gap_old2015_tobacco@survey |
+                                   2012  |   .0025083   .0000783      .0023549    .0026618
+                                   2015  |   .0027234   .0000855      .0025557     .002891
+                                   2018  |    .001619    .000036      .0015485    .0016896
+------------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    386                                  Number of obs   =        38,722
+Number of PSUs   = 10,130                                  Population size = 3,455,068,997
+                                                           Design df       =         9,744
+
+------------------------------------------------------------------------------------------
+                                         |             Linearized
+                                         |       Mean   std. err.     [95% conf. interval]
+-----------------------------------------+------------------------------------------------
+c.reldiff_pov_gap_old2015_tobacco@survey |
+                                   2012  |   .3936855   .1089592      .1801028    .6072683
+                                   2015  |   1.164781   .6797597     -.1676893    2.497251
+                                   2018  |   10.66823   10.15675     -9.241114    30.57757
+------------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                                 Number of obs   =        229,432
+Number of PSUs   = 17,077                                 Population size = 20,395,818,012
+                                                          Design df       =         16,245
+
+------------------------------------------------------------------------------------------
+                                         |             Linearized
+                                         |       Mean   std. err.     [95% conf. interval]
+-----------------------------------------+------------------------------------------------
+c.absdiff_pov_gap_new2015_tobacco@survey |
+                                   2012  |   .0025083   .0000783      .0023549    .0026618
+                                   2015  |   .0029084   .0000868      .0027382    .0030786
+                                   2018  |    .001619    .000036      .0015485    .0016896
+------------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    393                                  Number of obs   =        39,473
+Number of PSUs   = 10,204                                  Population size = 3,585,146,688
+                                                           Design df       =         9,811
+
+------------------------------------------------------------------------------------------
+                                         |             Linearized
+                                         |       Mean   std. err.     [95% conf. interval]
+-----------------------------------------+------------------------------------------------
+c.reldiff_pov_gap_new2015_tobacco@survey |
+                                   2012  |   .3936855   .1089592       .180103    .6072681
+                                   2015  |   .7822042   .3791306      .0390302    1.525378
+                                   2018  |   10.66823   10.15675     -9.241097    30.57756
+------------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                                 Number of obs   =        229,432
+Number of PSUs   = 17,077                                 Population size = 20,395,818,012
+                                                          Design df       =         16,245
+
+------------------------------------------------------------------------------------------
+                                         |             Linearized
+                                         |       Mean   std. err.     [95% conf. interval]
+-----------------------------------------+------------------------------------------------
+c.absdiff_pov_gap_old2015_alcohol@survey |
+                                   2012  |   .0013052   .0000429      .0012211    .0013893
+                                   2015  |   .0009394   .0000344      .0008721    .0010067
+                                   2018  |   .0005946   .0000145      .0005662     .000623
+------------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    386                                  Number of obs   =        38,722
+Number of PSUs   = 10,130                                  Population size = 3,455,068,997
+                                                           Design df       =         9,744
+
+------------------------------------------------------------------------------------------
+                                         |             Linearized
+                                         |       Mean   std. err.     [95% conf. interval]
+-----------------------------------------+------------------------------------------------
+c.reldiff_pov_gap_old2015_alcohol@survey |
+                                   2012  |   .1383124    .015017       .108876    .1677488
+                                   2015  |   .1593611   .0226499      .1149625    .2037597
+                                   2018  |    2.89074   2.728498     -2.457682    8.239161
+------------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                                 Number of obs   =        229,432
+Number of PSUs   = 17,077                                 Population size = 20,395,818,012
+                                                          Design df       =         16,245
+
+------------------------------------------------------------------------------------------
+                                         |             Linearized
+                                         |       Mean   std. err.     [95% conf. interval]
+-----------------------------------------+------------------------------------------------
+c.absdiff_pov_gap_new2015_alcohol@survey |
+                                   2012  |   .0013052   .0000429      .0012211    .0013893
+                                   2015  |   .0010139   .0000361      .0009431    .0010847
+                                   2018  |   .0005946   .0000145      .0005662     .000623
+------------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    393                                  Number of obs   =        39,473
+Number of PSUs   = 10,204                                  Population size = 3,585,146,688
+                                                           Design df       =         9,811
+
+------------------------------------------------------------------------------------------
+                                         |             Linearized
+                                         |       Mean   std. err.     [95% conf. interval]
+-----------------------------------------+------------------------------------------------
+c.reldiff_pov_gap_new2015_alcohol@survey |
+                                   2012  |   .1383124    .015017       .108876    .1677488
+                                   2015  |   .2062016   .0796253      .0501196    .3622836
+                                   2018  |    2.89074   2.728498     -2.457677    8.239156
+------------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                                Number of obs   =        229,432
+Number of PSUs   = 17,077                                Population size = 20,395,818,012
+                                                         Design df       =         16,245
+
+-----------------------------------------------------------------------------------------
+                                        |             Linearized
+                                        |       Mean   std. err.     [95% conf. interval]
+----------------------------------------+------------------------------------------------
+c.absdiff_pov_gap_old2015_health@survey |
+                                  2012  |   .0041445   .0003316      .0034947    .0047944
+                                  2015  |   .0035571   .0003108      .0029478    .0041663
+                                  2018  |    .001977   .0003248      .0013403    .0026137
+-----------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    386                                 Number of obs   =        38,722
+Number of PSUs   = 10,130                                 Population size = 3,455,068,997
+                                                          Design df       =         9,744
+
+-----------------------------------------------------------------------------------------
+                                        |             Linearized
+                                        |       Mean   std. err.     [95% conf. interval]
+----------------------------------------+------------------------------------------------
+c.reldiff_pov_gap_old2015_health@survey |
+                                  2012  |   .4036663    .141506      .1262851    .6810475
+                                  2015  |   .4038418   .0626536      .2810277    .5266559
+                                  2018  |    1.11433    .681139     -.2208439    2.449504
+-----------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    832                                Number of obs   =        229,432
+Number of PSUs   = 17,077                                Population size = 20,395,818,012
+                                                         Design df       =         16,245
+
+-----------------------------------------------------------------------------------------
+                                        |             Linearized
+                                        |       Mean   std. err.     [95% conf. interval]
+----------------------------------------+------------------------------------------------
+c.absdiff_pov_gap_new2015_health@survey |
+                                  2012  |   .0041445   .0003316      .0034947    .0047944
+                                  2015  |   .0037845   .0002981      .0032001    .0043689
+                                  2018  |    .001977   .0003248      .0013403    .0026137
+-----------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+(running mean on estimation sample)
+
+Survey: Mean estimation
+
+Number of strata =    393                                 Number of obs   =        39,473
+Number of PSUs   = 10,204                                 Population size = 3,585,146,688
+                                                          Design df       =         9,811
+
+-----------------------------------------------------------------------------------------
+                                        |             Linearized
+                                        |       Mean   std. err.     [95% conf. interval]
+----------------------------------------+------------------------------------------------
+c.reldiff_pov_gap_new2015_health@survey |
+                                  2012  |   .4036663    .141506      .1262853    .6810473
+                                  2015  |   .3292505   .0360985      .2584899    .4000111
+                                  2018  |    1.11433    .681139     -.2208428    2.449502
+-----------------------------------------------------------------------------------------
+Note: Strata with single sampling unit centered at overall mean.
+
+. 
+. ***
+. 
+. save "01_Intermediate_Extracts\tob_alc_health_final_net_pens.dta", replace
+file 01_Intermediate_Extracts\tob_alc_health_final_net_pens.dta saved
+
+. 
+. log close Log04_Impoverishment 
+      name:  Log04_Impoverishment
+       log:  C:\Users\neljasonhaw\OneDrive\Documents\Teaching\Research\FIES 2012 to 2018\Code\03_Log_Files\04 Impoverishment.log
+  log type:  text
+ closed on:   9 Aug 2021, 09:37:05
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
